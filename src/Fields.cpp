@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
@@ -14,21 +15,72 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 }
 
-void Fields::calculate_fluxes(Grid &grid) {}
+void Fields::calculate_fluxes(Grid &grid) {
+}
 
-void Fields::calculate_rs(Grid &grid) {}
+void Fields::calculate_rs(Grid &grid) {
 
-void Fields::calculate_velocities(Grid &grid) {}
+    for (int i = 1; i < grid.imax(); i++) {
+        for (int j = 1; j < grid.jmax(); j++) {
+            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / grid.dx() + (_G(i + 1, j) - _G(i, j)) / grid.dy());
+        }
+    }
+}
 
-double Fields::calculate_dt(Grid &grid) { return _dt; }
+void Fields::calculate_velocities(Grid &grid) {
+    /*
+    Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
 
-double &Fields::p(int i, int j) { return _P(i, j); }
-double &Fields::u(int i, int j) { return _U(i, j); }
-double &Fields::v(int i, int j) { return _V(i, j); }
-double &Fields::f(int i, int j) { return _F(i, j); }
-double &Fields::g(int i, int j) { return _G(i, j); }
-double &Fields::rs(int i, int j) { return _RS(i, j); }
+    Equation 7 and Equation 8 give the closed formula to determine the new velocities.
+    */
 
-Matrix<double> &Fields::p_matrix() { return _P; }
+    int imax = grid.imax();
+    int jmax = grid.jmax();
+    double dx = grid.dx();
+    double dy = grid.dy();
 
-double Fields::dt() const { return _dt; }
+    // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
+    for (int i = 1; i <= imax; i++) {
+        for (int j = 1; j <= jmax; j++) {
+            // U (Eq 7)
+            _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
+
+            // V (Eq 8)
+            _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
+        }
+    }
+}
+
+double Fields::calculate_dt(Grid &grid) {
+
+    double dx = grid.dx();
+    double dy = grid.dy();
+    double Umax = 0.0, Vmax = 0.0;
+
+    // Find Maximum values of U and V inside their fields: Umax, Vmax
+    for (int j = 1; j < grid.domain().jmax; j++) {
+        for (int i = 1; i < grid.domain().imax; i++) {
+            if (_U(i, j) > Umax) {
+                Umax = _U(i, j);
+            }
+            if (_V(i, j) > Vmax) {
+                Vmax = _V(i, j);
+            }
+        }
+    }
+    std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
+    _dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
+    //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
+    return _dt;
+}
+
+    double &Fields::p(int i, int j) { return _P(i, j); }
+    double &Fields::u(int i, int j) { return _U(i, j); }
+    double &Fields::v(int i, int j) { return _V(i, j); }
+    double &Fields::f(int i, int j) { return _F(i, j); }
+    double &Fields::g(int i, int j) { return _G(i, j); }
+    double &Fields::rs(int i, int j) { return _RS(i, j); }
+
+    Matrix<double> &Fields::p_matrix() { return _P; }
+
+    double Fields::dt() const { return _dt; }
