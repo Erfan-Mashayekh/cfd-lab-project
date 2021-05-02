@@ -69,7 +69,7 @@ void MovingWallBoundary::apply(Fields &field) {
     */
    for (int i=1;i<=imax;i++){
         // u 
-        field.u(i,jmax) = _wall_velocity;
+        field.u(i,jmax) = _wall_velocity.second;
 
         // v  
         field.v(i,jmax) = 0;
