@@ -8,17 +8,17 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, do
     : _cells(cells), _wall_temperature(wall_temperature) {}
 
 void FixedWallBoundary::apply(Fields &field){
-    
-    /* All boundaries except the top are fixed wall or no slip. 
-    
-    U on the left and right are set to 0 and v at the bottom is set to 0.
-    
-    No v-values lie on the vertical boundaries and no u-values lie on 
-    the horizontal boundaries, the boundary value zero is achieved by averaging the values on both sides
-    of the boundary. Thus Vout = -vin.
-    */
-    
-    
+    /** 
+     * All boundaries except the top are fixed wall or no slip. 
+     * 
+     * U on the left and right are set to 0 and v at the bottom is set to 0.
+     * 
+     * No v-values lie on the vertical boundaries and no u-values lie on 
+     * the horizontal boundaries, the boundary value zero is achieved by 
+     * averaging the values on both sides of the boundary. Thus Vout = -vin.
+     * 
+     */
+       
     // Assigning a maximum grid max
     double imax = _cells[_cells.size()-1]->i()-1;
     double jmax = _cells[_cells.size()-1]->j()-1;
@@ -41,12 +41,9 @@ void FixedWallBoundary::apply(Fields &field){
         // u 
         field.u(i,0) = - field.u(i,1);
         // v 
-        field.v(i,0) = 0;
-        
+        field.v(i,0) = 0;       
     }
-
 }
-
 
 
 MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, double wall_velocity) : _cells(cells) {
@@ -59,7 +56,6 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
 
 void MovingWallBoundary::apply(Fields &field) {
 
-
     // Assigning a maximum grid max
     double imax = _cells[_cells.size()-1]->i()-1;
     double jmax = _cells[_cells.size()-1]->j()-1;
@@ -69,11 +65,9 @@ void MovingWallBoundary::apply(Fields &field) {
     */
    for (int i=1;i<=imax;i++){
         // u 
-        field.u(i,jmax) = _wall_velocity.second;
-
+        field.u(i,jmax + 1)  = 2.0 * _wall_velocity[LidDrivenCavity::moving_wall_id] - field.u(i,jmax); 
         // v  
         field.v(i,jmax) = 0;
     }
 
 }
-
