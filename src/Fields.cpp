@@ -16,6 +16,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 }
 
 void Fields::calculate_fluxes(Grid &grid) {
+
     for (int j = 1; j < grid.domain().jmax; j++) {
         for (int i = 1; i < grid.domain().imax; i++) {
             _F(i, j) = _U(i, j) + _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
@@ -25,9 +26,44 @@ void Fields::calculate_fluxes(Grid &grid) {
 }
 
 
-void Fields::calculate_rs(Grid &grid) {}
+void Fields::calculate_rs(Grid &grid) {
 
-void Fields::calculate_velocities(Grid &grid) {}
+	imax = grid.imax();
+	jmax = grid.jmax();
+	dx = grid.dx();
+	dy = grid.dy();
+
+	for(int i = 0; i < imax + 1; i++)
+	{
+		for(int j = 0; j < jmax + 1; j++)
+		{
+			_RS(i, j) = (1/_dt) * ((_F(i+1, j) - _F(i, j))/dx + (_G(i+1, j) - _G(i, j))/dy);
+		}
+	}
+
+}
+
+void Fields::calculate_velocities(Grid &grid) {
+    /*
+    Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
+
+    Equation 7 and Equation 8 give the closed formula to determine the new velocities.
+    */
+
+    // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
+    for (int i=1;i<=imax;i++)
+    {
+        for (int j=1;j<=jmax;j++)
+        {
+            // U (Eq 7)
+            _U(i,j) = _F(i,j) - (_dt/_dx)*(_P(i+1,j) - _P(i,j)) ;
+
+            // V (Eq 8)
+            _V(i,j) = _G(i,j) - (_dt/_dy)*(_P(i,j+1) - _P(i,j));
+        }
+    }
+
+   
 
 double Fields::calculate_dt(Grid &grid) { 
 

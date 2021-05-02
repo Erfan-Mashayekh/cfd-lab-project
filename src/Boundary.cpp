@@ -8,7 +8,6 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, do
     : _cells(cells), _wall_temperature(wall_temperature) {}
 
 void FixedWallBoundary::apply(Fields &field){
-    
     /** 
      * All boundaries except the top are fixed wall or no slip. 
      * 
@@ -46,6 +45,7 @@ void FixedWallBoundary::apply(Fields &field){
     }
 }
 
+
 MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, double wall_velocity) : _cells(cells) {
     _wall_velocity.insert(std::pair(LidDrivenCavity::moving_wall_id, wall_velocity));
 }
@@ -57,16 +57,15 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
 void MovingWallBoundary::apply(Fields &field) {
 
     // Assigning a maximum grid max
-    double imax = _cells[_cells.length()-1]->i()-1;
-    double jmax = _cells[_cells.length()-1]->j()-1;
+    double imax = _cells[_cells.size()-1]->i()-1;
+    double jmax = _cells[_cells.size()-1]->j()-1;
 
     /* The top wall is a moving wall thus, the velocity on the top wall would be the velocity of the wall itself.
     
     */
    for (int i=1;i<=imax;i++){
         // u 
-        field.u(i,jmax) = _wall_velocity;
-
+        field.u(i,jmax + 1)  = 2.0 * _wall_velocity[LidDrivenCavity::moving_wall_id] - field.u(i,jmax); 
         // v  
         field.v(i,jmax) = 0;
     }
