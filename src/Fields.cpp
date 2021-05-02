@@ -82,16 +82,13 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
-
-    //std::vector<double> dt_container;
-    //dt_container.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
-    //dt_container.push_back(dx / Umax);
-    //dt_container.push_back(dy / Vmax);
-
-    //_dt = std::min_element(dt_container.begin(), dt_container.end());    
-    _dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
+    std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
+    _dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
+    //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
     return _dt;
 }
+
+
 
     double &Fields::p(int i, int j) { return _P(i, j); }
     double &Fields::u(int i, int j) { return _U(i, j); }
