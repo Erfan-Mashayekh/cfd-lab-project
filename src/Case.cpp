@@ -178,6 +178,13 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+
+    if (not _grid.fixed_wall_cells().empty()) {
+        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+    }
+    _field.calculate_fluxes(_grid);
+
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
