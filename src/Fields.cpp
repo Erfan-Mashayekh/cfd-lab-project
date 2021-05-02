@@ -18,7 +18,27 @@ void Fields::calculate_fluxes(Grid &grid) {}
 
 void Fields::calculate_rs(Grid &grid) {}
 
-void Fields::calculate_velocities(Grid &grid) {}
+void Fields::calculate_velocities(Grid &grid) {
+    /*
+    Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
+
+    Equation 7 and Equation 8 give the closed formula to determine the new velocities.
+    */
+
+    // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
+    for (int i=1;i<=imax;i++)
+    {
+        for (int j=1;j<=jmax;j++)
+        {
+            // U (Eq 7)
+            _U(i,j) = _F(i,j) - (_dt/_dx)*(_P(i+1,j) - _P(i,j)) ;
+
+            // V (Eq 8)
+            _V(i,j) = _G(i,j) - (_dt/_dy)*(_P(i,j+1) - _P(i,j));
+        }
+    }
+
+   
 
 double Fields::calculate_dt(Grid &grid) { return _dt; }
 
