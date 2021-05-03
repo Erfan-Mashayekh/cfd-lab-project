@@ -17,8 +17,8 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 void Fields::calculate_fluxes(Grid &grid) {
 
-    for (int j = 2; j < grid.jmax(); j++) {
-        for (int i = 2; i < grid.imax(); i++) {
+    for (int j = 1; j <= grid.jmax(); j++) {
+        for (int i = 1; i < grid.imax(); i++) {
             _F(i, j) = _U(i, j) + _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
         }
     }
@@ -30,13 +30,9 @@ void Fields::calculate_fluxes(Grid &grid) {
 }
 
 void Fields::calculate_rs(Grid &grid) {
-
-    double dx = grid.dx();
-    double dy = grid.dy();
-
-    for (int j = 1; j <= grid.jmax(); j++) {
-        for (int i = 1; i <= grid.imax(); i++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / dx + (_G(i + 1, j) - _G(i, j)) / dy);
+    for (int i = 1; i < grid.imax(); i++) {
+        for (int j = 1; j < grid.jmax(); j++) {
+            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / grid.dx() + (_G(i + 1, j) - _G(i, j)) / grid.dy());
         }
     }
 }
@@ -82,8 +78,16 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
+
+    _dt = 10;
+
     std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
-    _dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
+    for (int k = 0; k <= 2; k++){
+        if (dt_container[k] < _dt){
+            _dt = dt_container[k];
+        }
+    }
+    //_dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
     //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
     return _dt;
 }
