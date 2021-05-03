@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <cmath>
+
+using namespace std;
 
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
@@ -66,6 +69,10 @@ double Fields::calculate_dt(Grid &grid) {
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
+    _nu = 0.001;
+    cout<<"grid dx = "<<dx<<endl;
+    cout<<"grid dy = "<<dy<<endl;
+    //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
     for (int j = 1; j < grid.jmax(); j++) {
@@ -78,7 +85,8 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
-
+/*
+<<<<<<< HEAD
     _dt = 10;
     _nu = 0.001;
     std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
@@ -89,8 +97,29 @@ double Fields::calculate_dt(Grid &grid) {
     }
     //_dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
     //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
+======= 
+*/
+    cout<<"Umax = "<<Umax<<endl;
+    cout<<"Vmax = "<<Umax<<endl;
+
+
+    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    std::cout<<"dt1 = "<<_dt1<<std::endl;
+
+    double _dt2 = grid.dx()/Umax;
+    std::cout<<"dt2 = "<<_dt2<<std::endl;
+
+    double _dt3 = grid.dy()/Vmax;
+    std::cout<<"dt3 = "<<_dt3<<std::endl;
+
+    _dt = std::min( _dt1 , _dt2);
+    _dt = std::min( _dt , _dt3);
+    _dt = _tau*_dt;
+
     return _dt;
 }
+
+
 
     double &Fields::p(int i, int j) { return _P(i, j); }
     double &Fields::u(int i, int j) { return _U(i, j); }
