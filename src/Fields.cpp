@@ -41,7 +41,7 @@ void Fields::calculate_rs(Grid &grid) {
 
     for (int i = 1; i < grid.imax() + 1; i++) {
         for (int j = 1; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) / grid.dx() + (_G(i, j) - _G(i - 1, j)) / grid.dy());
+            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) / grid.dx() + (_G(i, j) - _G(i, j - 1)) / grid.dy());
         }
     }
 }
@@ -79,9 +79,6 @@ double Fields::calculate_dt(Grid &grid) {
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
-    _nu = 0.001;
-    cout<<"grid dx = "<<dx<<endl;
-    cout<<"grid dy = "<<dy<<endl;
     //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
@@ -96,22 +93,13 @@ double Fields::calculate_dt(Grid &grid) {
         }
     }
 
-    cout<<"Umax = "<<Umax<<endl;
-    cout<<"Vmax = "<<Umax<<endl;
-
-
     double _dt1 =(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
-    std::cout<<"dt1 = "<<_dt1<<std::endl;
 
     double _dt2 = grid.dx()/abs(Umax);
-    std::cout<<"dt2 = "<<_dt2<<std::endl;
 
     double _dt3 = grid.dy()/abs(Vmax);
-    std::cout<<"dt3 = "<<_dt3<<std::endl;
 
-    _dt = std::min( _dt1 , _dt2);
-    _dt = std::min( _dt , _dt3);
-    _dt = _tau*_dt;
+    _dt =  _tau * std::min(std::min( _dt1 , _dt2), _dt3);
 
     return _dt;
 }

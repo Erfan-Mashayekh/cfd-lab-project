@@ -176,10 +176,9 @@ void Case::simulate() {
 
     double t = 0.0;
     double dt = _field.dt();
-    cout<<"dt = "<<dt<<endl;
     int timestep = 0;
     double output_counter = 0.0;
-    cout<<"t = "<<t<<endl;
+
   
 
     while (t <= _t_end){
@@ -199,17 +198,17 @@ void Case::simulate() {
         
         while (it <= _max_iter && res > _tolerance ){
 
-            // // Bottom and top wall
-            // for (int i = 1; i <= _grid.imax(); i++) {
-            //      _field.p(i,0) = _field.p(i,1);
-            //      _field.p(i,_grid.jmax()+1) = _field.p(i,_grid.jmax());
-            // }
+            // Bottom and top wall
+            for (int i = 1; i <= _grid.imax(); i++) {
+                 _field.p(i,0) = _field.p(i,1);
+                 _field.p(i,_grid.jmax()+1) = _field.p(i,_grid.jmax());
+            }
 
-            // // Left and right wall
-            // for (int j = 1; j <= _grid.jmax(); j++) {
-            //      _field.p(0,j) = _field.p(1,j);
-            //      _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
-            // }  
+            // Left and right wall
+            for (int j = 1; j <= _grid.jmax(); j++) {
+                 _field.p(0,j) = _field.p(1,j);
+                 _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
+            }  
 
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             it++;
