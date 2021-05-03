@@ -190,6 +190,8 @@ void Case::simulate() {
         }
 
         _field.calculate_fluxes(_grid);
+
+        
         _field.calculate_rs(_grid);
 
         int it = 0;
@@ -208,8 +210,6 @@ void Case::simulate() {
                  _field.p(0,j) = _field.p(1,j);
                  _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
             }  
-
-
 
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             it++;
