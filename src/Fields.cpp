@@ -39,9 +39,9 @@ void Fields::calculate_fluxes(Grid &grid) {
 
 void Fields::calculate_rs(Grid &grid) {
 
-    for (int i = 0; i < grid.imax() + 1; i++) {
-        for (int j = 0; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / grid.dx() + (_G(i + 1, j) - _G(i, j)) / grid.dy());
+    for (int i = 1; i < grid.imax() + 1; i++) {
+        for (int j = 1; j < grid.jmax() + 1; j++) {
+            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) / grid.dx() + (_G(i, j) - _G(i - 1, j)) / grid.dy());
         }
     }
 }
@@ -85,13 +85,13 @@ double Fields::calculate_dt(Grid &grid) {
     //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    for (int j = 1; j < grid.domain().jmax; j++) {
-        for (int i = 1; i < grid.domain().imax; i++) {
-            if (_U(i, j) > Umax) {
-                Umax = _U(i, j);
+    for (int j = 1; j < grid.jmax(); j++) {
+        for (int i = 1; i < grid.imax(); i++) {
+            if (abs(_U(i, j)) > Umax) {
+                Umax = abs(_U(i, j));
             }
-            if (_V(i, j) > Vmax) {
-                Vmax = _V(i, j);
+            if (abs(_V(i, j)) > Vmax) {
+                Vmax = abs(_V(i, j));
             }
         }
     }
@@ -100,13 +100,13 @@ double Fields::calculate_dt(Grid &grid) {
     cout<<"Vmax = "<<Umax<<endl;
 
 
-    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    double _dt1 =(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
     std::cout<<"dt1 = "<<_dt1<<std::endl;
 
-    double _dt2 = grid.dx()/Umax;
+    double _dt2 = grid.dx()/abs(Umax);
     std::cout<<"dt2 = "<<_dt2<<std::endl;
 
-    double _dt3 = grid.dy()/Vmax;
+    double _dt3 = grid.dy()/abs(Vmax);
     std::cout<<"dt3 = "<<_dt3<<std::endl;
 
     _dt = std::min( _dt1 , _dt2);
