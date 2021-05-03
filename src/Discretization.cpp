@@ -16,7 +16,7 @@ double Discretization::convection_u(const Matrix<double> &U, const Matrix<double
     double result = (     interpolate(U, i, j, 1, 0)  * interpolate(U, i, j, 1, 0)    -     interpolate(U, i - 1, j, 0, 0)   * interpolate(U, i - 1, j, 0, 0)) / _dx +
                     ( abs(interpolate(U, i, j, 1, 0)) * (U(i, j) - U(i + 1, j)) / 2.0 - abs(interpolate(U, i - 1, j, 0, 0))  * (U(i - 1, j) - U(i, j)) / 2.0 ) / _dx * _gamma +
                     (     interpolate(V, i, j, 1, 0)  * interpolate(U, i, j, 0, 1)    -     interpolate(V, i, j - 1, 1, -1)  * interpolate(U, i, j - 1, 0, 0)) / _dy +
-                    ( abs(interpolate(U, i, j, 1, 0)) * (U(i, j) - U(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 1, -1)) * (U(i, j - 1) - U(i, j)) / 2.0 ) / _dy * _gamma;
+                    ( abs(interpolate(V, i, j, 1, 0)) * (U(i, j) - U(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 1, -1)) * (U(i, j - 1) - U(i, j)) / 2.0 ) / _dy * _gamma;
     return result;                
 }
 

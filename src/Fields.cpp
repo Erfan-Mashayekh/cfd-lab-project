@@ -17,25 +17,25 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 void Fields::calculate_fluxes(Grid &grid) {
 
-    for (int j = 1; j < grid.jmax(); j++) {
-        for (int i = 1; i < grid.imax(); i++) {
-            _F(i, j) = _U(i, j) +
-                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
-            _G(i, j) = _V(i, j) +
-                       _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
+    for (int j = 2; j < grid.jmax(); j++) {
+        for (int i = 2; i < grid.imax(); i++) {
+            _F(i, j) = _U(i, j) + _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
+        }
+    }
+    for (int j = 1; j < grid.jmax(); j++) {    
+        for (int i = 1; i <= grid.imax(); i++) {
+            _G(i, j) = _V(i, j) + _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
         }
     }
 }
 
 void Fields::calculate_rs(Grid &grid) {
 
-    int imax = grid.imax();
-    int jmax = grid.jmax();
     double dx = grid.dx();
     double dy = grid.dy();
 
-    for (int i = 0; i < imax + 1; i++) {
-        for (int j = 0; j < jmax + 1; j++) {
+    for (int j = 1; j <= grid.jmax(); j++) {
+        for (int i = 1; i <= grid.imax(); i++) {
             _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / dx + (_G(i + 1, j) - _G(i, j)) / dy);
         }
     }
@@ -44,21 +44,21 @@ void Fields::calculate_rs(Grid &grid) {
 void Fields::calculate_velocities(Grid &grid) {
     /*
     Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
-
     Equation 7 and Equation 8 give the closed formula to determine the new velocities.
     */
 
-    int imax = grid.imax();
-    int jmax = grid.jmax();
     double dx = grid.dx();
     double dy = grid.dy();
 
     // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
-    for (int i = 1; i <= imax; i++) {
-        for (int j = 1; j <= jmax; j++) {
+    for (int j = 1; j <= grid.jmax(); j++) {
+        for (int i = 1; i < grid.imax(); i++) {
             // U (Eq 7)
             _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
-
+        }
+    }
+    for (int j = 1; j < grid.jmax(); j++) {
+        for (int i = 1; i <= grid.imax(); i++) {
             // V (Eq 8)
             _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
         }
@@ -72,8 +72,8 @@ double Fields::calculate_dt(Grid &grid) {
     double Umax = 0.0, Vmax = 0.0;
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    for (int j = 1; j < grid.domain().jmax; j++) {
-        for (int i = 1; i < grid.domain().imax; i++) {
+    for (int j = 1; j < grid.jmax(); j++) {
+        for (int i = 1; i < grid.imax(); i++) {
             if (_U(i, j) > Umax) {
                 Umax = _U(i, j);
             }
