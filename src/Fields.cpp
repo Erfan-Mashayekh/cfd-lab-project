@@ -80,7 +80,7 @@ double Fields::calculate_dt(Grid &grid) {
     }
 
     _dt = 10;
-
+    _nu = 0.001;
     std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
     for (int k = 0; k <= 2; k++){
         if (dt_container[k] < _dt){
