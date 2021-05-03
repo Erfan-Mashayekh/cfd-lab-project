@@ -13,18 +13,18 @@ Discretization::Discretization(double dx, double dy, double gamma) {
 }
 
 double Discretization::convection_u(const Matrix<double> &U, const Matrix<double> &V, int i, int j) {
-    double result = (     interpolate(U, i, j, 1, 0)  * interpolate(U, i, j, 1, 0)    -     interpolate(U, i - 1, j, 0, 0)   * interpolate(U, i - 1, j, 0, 0)) / _dx +
-                    ( abs(interpolate(U, i, j, 1, 0)) * (U(i, j) - U(i + 1, j)) / 2.0 - abs(interpolate(U, i - 1, j, 0, 0))  * (U(i - 1, j) - U(i, j)) / 2.0 ) / _dx * _gamma +
-                    (     interpolate(V, i, j, 1, 0)  * interpolate(U, i, j, 0, 1)    -     interpolate(V, i, j - 1, 1, -1)  * interpolate(U, i, j - 1, 0, 0)) / _dy +
-                    ( abs(interpolate(U, i, j, 1, 0)) * (U(i, j) - U(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 1, -1)) * (U(i, j - 1) - U(i, j)) / 2.0 ) / _dy * _gamma;
+    double result = (     interpolate(U, i, j, 1, 0)  * interpolate(U, i, j, 1, 0)    -     interpolate(U, i - 1, j, 1, 0)   * interpolate(U, i - 1, j, 1, 0)) / _dx +
+                    ( abs(interpolate(U, i, j, 1, 0)) * (U(i, j) - U(i + 1, j)) / 2.0 - abs(interpolate(U, i - 1, j, 1, 0))  * (U(i - 1, j) - U(i, j)) / 2.0 ) / _dx * _gamma +
+                    (     interpolate(V, i, j, 1, 0)  * interpolate(U, i, j, 0, 1)    -     interpolate(V, i, j - 1, 1, 0)   * interpolate(U, i, j - 1, 0, 1)) / _dy +
+                    ( abs(interpolate(V, i, j, 1, 0)) * (U(i, j) - U(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 1, 0))  * (U(i, j - 1) - U(i, j)) / 2.0 ) / _dy * _gamma;
     return result;                
 }
 
 double Discretization::convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j) {
-    double result = (     interpolate(V, i, j, 0, 1)  * interpolate(V, i, j, 0, 1)    -     interpolate(U, i, j - 1, 0, 0)   * interpolate(V, i, j - 1, 0, 0)) / _dy +
-                    ( abs(interpolate(V, i, j, 0, 1)) * (V(i, j) - V(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 0, 0))  * (V(i, j - 1) - V(i, j)) / 2.0 ) / _dy * _gamma +
-                    (     interpolate(U, i, j, 0, 1)  * interpolate(V, i, j, 1, 0)    -     interpolate(U, i - 1, j, -1, 1)  * interpolate(V, i - 1, j, 0, 0)) / _dx +
-                    ( abs(interpolate(U, i, j, 0, 1)) * (V(i, j) - V(i + 1, j)) / 2.0 - abs(interpolate(U, i - 1, j, -1, 1)) * (V(i - 1, j) - V(i, j)) / 2.0 ) / _dx * _gamma;
+    double result = (     interpolate(V, i, j, 0, 1)  * interpolate(V, i, j, 0, 1)    -     interpolate(V, i, j - 1, 0, 1)   * interpolate(V, i, j - 1, 0, 1)) / _dy +
+                    ( abs(interpolate(V, i, j, 0, 1)) * (V(i, j) - V(i, j + 1)) / 2.0 - abs(interpolate(V, i, j - 1, 0, 1))  * (V(i, j - 1) - V(i, j)) / 2.0 ) / _dy * _gamma +
+                    (     interpolate(U, i, j, 0, 1)  * interpolate(V, i, j, 1, 0)    -     interpolate(U, i - 1, j, 0, 1)   * interpolate(V, i - 1, j, 1, 0)) / _dx +
+                    ( abs(interpolate(U, i, j, 0, 1)) * (V(i, j) - V(i + 1, j)) / 2.0 - abs(interpolate(U, i - 1, j, 0, 1))  * (V(i - 1, j) - V(i, j)) / 2.0 ) / _dx * _gamma;
     return result;     
 }
 

@@ -29,14 +29,9 @@ void Fields::calculate_fluxes(Grid &grid) {
 
 void Fields::calculate_rs(Grid &grid) {
 
-    int imax = grid.imax();
-    int jmax = grid.jmax();
-    double dx = grid.dx();
-    double dy = grid.dy();
-
-    for (int i = 0; i < imax + 1; i++) {
-        for (int j = 0; j < jmax + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / dx + (_G(i + 1, j) - _G(i, j)) / dy);
+    for (int i = 1; i < grid.imax(); i++) {
+        for (int j = 1; j < grid.jmax(); j++) {
+            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / grid.dx() + (_G(i + 1, j) - _G(i, j)) / grid.dy());
         }
     }
 }
