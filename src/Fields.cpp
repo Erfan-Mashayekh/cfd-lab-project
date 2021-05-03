@@ -64,7 +64,7 @@ void Fields::calculate_velocities(Grid &grid) {
 }
 
 double Fields::calculate_dt(Grid &grid) {
-    
+
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
@@ -74,24 +74,19 @@ double Fields::calculate_dt(Grid &grid) {
     //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-       for (int i=1;i<=grid.imax();i++)
-   {
-        for (int j=1;j<=grid.jmax();j++)
-        {
-            if (Umax<abs(_U(i,j)))
-            {
-                Umax = abs(_U(i,j));
+    for (int j = 1; j < grid.domain().jmax; j++) {
+        for (int i = 1; i < grid.domain().imax; i++) {
+            if (_U(i, j) > Umax) {
+                Umax = _U(i, j);
             }
-            
-            if (Vmax < abs(_V(i,j)))
-            {
-                Vmax = abs(_V(i,j));
+            if (_V(i, j) > Vmax) {
+                Vmax = _V(i, j);
             }
         }
     }
 
     cout<<"Umax = "<<Umax<<endl;
-    cout<<"Vmax = "<<Vmax<<endl;
+    cout<<"Vmax = "<<Umax<<endl;
 
 
     double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
