@@ -179,21 +179,25 @@ void Case::simulate() {
     int timestep = 0;
     double output_counter = 0.0;
 
-    _field.calculate_dt(_grid);
-    for (auto & boundary: _boundaries){
-        boundary->apply(_field);
-    }
-    _field.calculate_fluxes(_grid);
-    _field.calculate_rs(_grid);
+    //while (t <= 5){
+        _field.calculate_dt(_grid);
+        for (auto & boundary: _boundaries){
+            boundary->apply(_field);
+        }
+        _field.calculate_fluxes(_grid);
+        _field.calculate_rs(_grid);
 
-    int it = 0;
-    double res = _tolerance + 1.0;
-    while (it <= _max_iter && res > _tolerance ){
-        res = _pressure_solver->solve(_field, _grid, _boundaries);
-        it++;
-    }
-    
-    _field.calculate_velocities(_grid);
+        int it = 0;
+        double res = _tolerance + 1.0;
+    //    while (it <= _max_iter && res > _tolerance ){
+            res = _pressure_solver->solve(_field, _grid, _boundaries);
+            it++;
+    //    }
+        _field.calculate_velocities(_grid);
+        t = t + dt;
+        timestep++;
+    //}
+    //output_vtk(timestep-1, 1);
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
