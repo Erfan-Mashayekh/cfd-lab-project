@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <cmath>
+
+using namespace std;
 
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
@@ -61,25 +64,49 @@ void Fields::calculate_velocities(Grid &grid) {
 }
 
 double Fields::calculate_dt(Grid &grid) {
-
+    
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
+    _nu = 0.001;
+    cout<<"grid dx = "<<dx<<endl;
+    cout<<"grid dy = "<<dy<<endl;
+    //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    for (int j = 1; j < grid.domain().jmax; j++) {
-        for (int i = 1; i < grid.domain().imax; i++) {
-            if (_U(i, j) > Umax) {
-                Umax = _U(i, j);
+       for (int i=1;i<=grid.imax();i++)
+   {
+        for (int j=1;j<=grid.jmax();j++)
+        {
+            if (Umax<abs(_U(i,j)))
+            {
+                Umax = abs(_U(i,j));
             }
-            if (_V(i, j) > Vmax) {
-                Vmax = _V(i, j);
+            
+            if (Vmax < abs(_V(i,j)))
+            {
+                Vmax = abs(_V(i,j));
             }
         }
     }
-    std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
-    _dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
-    //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
+
+    cout<<"Umax = "<<Umax<<endl;
+    cout<<"Vmax = "<<Vmax<<endl;
+
+
+    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    std::cout<<"dt1 = "<<_dt1<<std::endl;
+
+    double _dt2 = grid.dx()/Umax;
+    std::cout<<"dt2 = "<<_dt2<<std::endl;
+
+    double _dt3 = grid.dy()/Vmax;
+    std::cout<<"dt3 = "<<_dt3<<std::endl;
+
+    _dt = std::min( _dt1 , _dt2);
+    _dt = std::min( _dt , _dt3);
+    _dt = _tau*_dt;
+
     return _dt;
 }
 
