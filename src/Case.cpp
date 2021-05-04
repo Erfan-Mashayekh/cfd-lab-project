@@ -176,20 +176,19 @@ void Case::simulate() {
 
     double t = 0.0;
     double dt = _field.dt();
-    cout<<"dt = "<<dt<<endl;
+    // cout<<"dt = "<<dt<<endl;
     int timestep = 0;
     double output_counter = 0.0;
-    cout<<"t = "<<t<<endl;
-  
+    // cout<<"t = "<<t<<endl;
 
-    while (t <= _t_end){
-        
-        
+    while (t <= _t_end){     
+
         for (auto & boundary: _boundaries){
             boundary->apply(_field);
         }
-
         _field.calculate_fluxes(_grid);
+
+        
         _field.calculate_rs(_grid);
 
         int it = 0;
@@ -209,8 +208,6 @@ void Case::simulate() {
                  _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
             }  
 
-
-
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             it++;
         }
@@ -218,7 +215,7 @@ void Case::simulate() {
         _field.calculate_velocities(_grid);
         dt = _field.calculate_dt(_grid);
         t = t + dt;
-        cout<<"t = "<<t<<endl;
+        // cout<<"t = "<<t<<endl;
         timestep++;
     }
     output_vtk(timestep, _t_end);
