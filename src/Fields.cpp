@@ -5,8 +5,6 @@
 #include <vector>
 #include <cmath>
 
-using namespace std;
-
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
     _U = Matrix<double>(imax + 2, jmax + 2, UI);
@@ -17,9 +15,9 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 
-    std::cout << "Value of nu = " << _nu << std::endl;
 }
 
+// Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid) {
 
     for (int j = 1; j < grid.jmax() + 1; j++) {
@@ -35,25 +33,9 @@ void Fields::calculate_fluxes(Grid &grid) {
                        _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
         }
     }
-
-    /*
-    //Ghost cell flux BC
-
-
-      for (int i=1;i<grid.imax();i++){
-        for (int j=1;j<grid.jmax();j++){
-            // Eq 17 WS1 ghost cell flux BC
-            _G(i,0) = _V(i,0);
-            _G(i,grid.jmax()) = _V(i,grid.jmax());
-            // Eq 17 WS1 ghost cell flux BC
-            _F(0,j) = _U(0,j);
-            _F(grid.imax(),j) = _U(grid.imax(),j);
-        }  
-      }
-
-    */
 }
 
+// calculate right hand side rhs of the pressure eq
 void Fields::calculate_rs(Grid &grid) {
 
     for (int i = 1; i < grid.imax() + 1; i++) {
@@ -63,6 +45,7 @@ void Fields::calculate_rs(Grid &grid) {
     }
 }
 
+// Calculate the velocities at the next time step
 void Fields::calculate_velocities(Grid &grid) {
     /*
     Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
@@ -88,15 +71,13 @@ void Fields::calculate_velocities(Grid &grid) {
     }
 }
 
+// calculate dt for adaptive time stepping
 double Fields::calculate_dt(Grid &grid) {
 
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
-    _nu = 0.001;
-    // cout<<"grid dx = "<<dx<<endl;
-    // cout<<"grid dy = "<<dy<<endl;
-    //no problem with dx and dy
+
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
     for (int j = 1; j < grid.jmax(); j++) {
@@ -109,32 +90,12 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
-/*
-<<<<<<< HEAD
-    _dt = 10;
-    _nu = 0.001;
-    std::vector<double> dt_container = {(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu) , dx / Umax , dy / Vmax};
-    for (int k = 0; k <= 2; k++){
-        if (dt_container[k] < _dt){
-            _dt = dt_container[k];
-        }
-    }
-    //_dt = std::min_element(dt_container.begin(), dt_container.end())[0];    
-    //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
-======= 
-*/
-    std::cout<<"Umax = "<<Umax<<std::endl;
 
-
-
+    // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
+    // and avoid oscillations
     double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
-    // std::cout<<"dt1 = "<<_dt1<<std::endl;
-
     double _dt2 = grid.dx()/Umax;
-    // std::cout<<"dt2 = "<<_dt2<<std::endl;
-
     double _dt3 = grid.dy()/Vmax;
-    // std::cout<<"dt3 = "<<_dt3<<std::endl;
 
     _dt = std::min( _dt1 , _dt2);
     _dt = std::min( _dt , _dt3);

@@ -174,54 +174,84 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
+    // Running message
+    std::cout << "Fluidchen is running and will print vtk output every 100 timestep !" << std::endl;
+
+    // initialization
     double t = 0.0;
     double dt = _field.dt();
-    // cout<<"dt = "<<dt<<endl;
     int timestep = 0;
     double output_counter = 0.0;
-    // cout<<"t = "<<t<<endl;
 
-    while (t <= _t_end){     
+    // time loop
+    while (t <= _t_end) {
 
+        // calculate dt for adaptive time stepping
         dt = _field.calculate_dt(_grid);
 
-        for (auto & boundary: _boundaries){
+        // applying velocity boundary condition for every 4 sides of the wall boundary
+        for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
+
+        // calculate Fn and Gn
         _field.calculate_fluxes(_grid);
 
-        
+        // calculate right hand side rhs of the pressure eq
         _field.calculate_rs(_grid);
 
+        // SOR Loop
+        // Initialization of residual and iteration counter
         int it = 0;
         double res = _tolerance + 1.0;
-        
-        while (it <= _max_iter && res > _tolerance ){
-            
-            // Applying pressure BC in the SOR loop 
-            
-            // Bottom and top
+
+        // SOR loop begin
+        while (it <= _max_iter && res > _tolerance) {
+
+            // Applying pressure boundary condition for every 4 sides of the wall boundary
+
+            // Bottom & top
             for (int i = 1; i <= _grid.imax(); i++) {
-                 _field.p(i,0) = _field.p(i,1);
-                 _field.p(i,_grid.jmax()+1) = _field.p(i,_grid.jmax());
+                _field.p(i, 0) = _field.p(i, 1);
+                _field.p(i, _grid.jmax() + 1) = _field.p(i, _grid.jmax());
             }
 
-            // Left and right wall
+            // Left & right
             for (int j = 1; j <= _grid.jmax(); j++) {
-                 _field.p(0,j) = _field.p(1,j);
-                 _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
-            }  
+                _field.p(0, j) = _field.p(1, j);
+                _field.p(_grid.imax() + 1, j) = _field.p(_grid.imax(), j);
+            }
 
+            // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
+
+            // Increment the iteration counter
             it++;
         }
 
+        // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
+
+        // Calculate new time
         t = t + dt;
-        cout<<"t = "<<t<<endl;
+        // cout << "t = " << t << endl;
+
+        // Increment the time step counter
         timestep++;
+
+        // Output the vtk every 100 timestep just for the sake of animation
+        if (timestep % 100 == 0) {
+            std::cout << "Printing vtk file at t = " << t << std::endl;
+            ;
+            output_vtk(timestep, t);
+        }
     }
+
+    // Output the final VTK file
     output_vtk(timestep, _t_end);
+
+    // End message
+    std::cout << "Done !!";
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
