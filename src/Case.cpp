@@ -175,7 +175,7 @@ void Case::set_file_names(std::string file_name) {
 void Case::simulate() {
 
     // Running message
-    std::cout << "Fluidchen is running and will print vtk output every 100 timestep !" << std::endl;
+    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second !" << std::endl;
 
     // initialization
     double t = 0.0;
@@ -205,8 +205,10 @@ void Case::simulate() {
         int it = 0;
         // Set initial tolerance
         double res = _tolerance + 1.0;        
-        while (it < _max_iter && res > _tolerance){
-
+        
+        while (res > _tolerance){
+            
+          
             // Set pressure Neumann Boundary Conditions
             _field.set_pressure_bc(_grid);
 
@@ -215,7 +217,23 @@ void Case::simulate() {
 
             // Increment the iteration counter
             it++;
+            if (it == _max_iter) {
+                std::cout << "WARNING! Iteration counter reached the maximum iteration. (SOR did not converge)"<< std::endl;
+            }                    
+            
+            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
+            /*
+            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
+            Here we use ten for our case because it is already converged belom that timestep.
+            */
+
+            if(it > _max_iter && timestep > 10) {
+                break;
+            }
+
         }
+
+        
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
@@ -227,7 +245,7 @@ void Case::simulate() {
         timestep++;
 
         // Output the vtk every 1s
-        if (std::floor(t) > step) {
+        if (std::floor(t) > (step + _output_freq - 1)) {
             step = std::floor(t);
             std::cout << "Printing vtk file at t = " << step << std::endl;
             output_vtk(step, 0);
