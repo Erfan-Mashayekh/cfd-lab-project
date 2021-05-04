@@ -186,9 +186,6 @@ void Case::simulate() {
     // time loop
     while (t < _t_end) {
 
-        // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid);
-
         // Applying velocity boundary condition for every 4 sides of the wall boundary
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
@@ -225,6 +222,9 @@ void Case::simulate() {
 
         // Increment the time step counter
         timestep++;
+
+        // Calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid);
 
         // Output the vtk every 1s
         if (std::floor(t) > step) {

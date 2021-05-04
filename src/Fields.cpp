@@ -104,7 +104,7 @@ double Fields::calculate_dt(Grid &grid) {
 
 void Fields::set_pressure_bc(Grid &grid){
 
-        // Bottom and top wall
+    // Bottom and top wall
     for (int i = 1; i < grid.imax() + 1; i++) {
          _P(i, 0) = _P(i, 1);
          _P(i, grid.jmax() + 1) = _P(i, grid.jmax());
