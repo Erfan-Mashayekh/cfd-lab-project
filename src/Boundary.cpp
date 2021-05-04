@@ -77,9 +77,10 @@ void MovingWallBoundary::apply(Fields &field) {
 
     for(auto cell: _cells){
         // std::cout << "Moving wall velocity  = " << _wall_velocity[LidDrivenCavity::moving_wall_id] << std::endl;
-        if(cell->is_border(border_position::BOTTOM)){
+        if(cell->is_border(border_position::BOTTOM) && cell->type() == cell_type::MOVING_WALL){
             // v on the top
             field.v(cell->i(), cell->j()) = 0;
+            // std::cout << "cell->i() = " << cell->j() << "    cell->neighbour()->i() = " << cell->neighbour(border_position::BOTTOM)->j() << std::endl;
             // u on the top 
             field.u(cell->i(), cell->j()) = 2.0 * _wall_velocity[LidDrivenCavity::moving_wall_id] - field.u(cell->i(), cell->neighbour(border_position::BOTTOM)->j());
             // F on the left 

@@ -182,7 +182,7 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-
+    int step = 0;
     // time loop
     while (t < _t_end) {
 
@@ -205,7 +205,7 @@ void Case::simulate() {
         int it = 0;
         // Set initial tolerance
         double res = _tolerance + 1.0;        
-        while (it < _max_iter && res > _tolerance ){
+        while (it < _max_iter && res > _tolerance){
 
             // Set pressure Neumann Boundary Conditions
             _field.set_pressure_bc(_grid);
@@ -226,20 +226,20 @@ void Case::simulate() {
         // Increment the time step counter
         timestep++;
 
-        // Output the vtk every 100 timestep just for the sake of animation
-        if (timestep % 100 == 0) {
-            std::cout << "Printing vtk file at t = " << t << std::endl;
-            ;
-            output_vtk(timestep, t);
+        // Output the vtk every 1s
+        if (std::floor(t) > step) {
+            step = std::floor(t);
+            std::cout << "Printing vtk file at t = " << step << std::endl;
+            output_vtk(step, 0);
         }
      
     }
 
     // Output the final VTK file
-    output_vtk(timestep, _t_end);
+    output_vtk(step, 0);
 
     // End message
-    std::cout << "Done !!";
+    std::cout << "Done !\n";
 
 }
 

@@ -92,7 +92,8 @@ double Fields::calculate_dt(Grid &grid) {
 
     // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
     // and avoid oscillations
-    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    // double _dt1 = (0.5/_nu) * pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    double _dt1 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
     double _dt2 = grid.dx()/Umax;
     double _dt3 = grid.dy()/Vmax;
 
