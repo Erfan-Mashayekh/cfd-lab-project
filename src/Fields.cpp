@@ -104,15 +104,15 @@ double Fields::calculate_dt(Grid &grid) {
 void Fields::set_pressure_bc(Grid &grid){
 
         // Bottom and top wall
-    for (int i = 1; i < _grid.imax() + 1; i++) {
+    for (int i = 1; i < grid.imax() + 1; i++) {
          _P(i, 0) = _P(i, 1);
-         _P(i, _grid.jmax() + 1) = _P(i, _grid.jmax());
+         _P(i, grid.jmax() + 1) = _P(i, grid.jmax());
     }
 
     // Left and right wall
-    for (int j = 1; j < _grid.jmax() + 1; j++) {
+    for (int j = 1; j < grid.jmax() + 1; j++) {
          _P(0, j) = _P(1, j);
-         _P(_grid.imax() + 1, j) = _P(_grid.imax(), j);
+         _P(grid.imax() + 1, j) = _P(grid.imax(), j);
     }  
 }
 
