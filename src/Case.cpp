@@ -183,6 +183,8 @@ void Case::simulate() {
 
     while (t <= _t_end){     
 
+        dt = _field.calculate_dt(_grid);
+
         for (auto & boundary: _boundaries){
             boundary->apply(_field);
         }
@@ -195,8 +197,10 @@ void Case::simulate() {
         double res = _tolerance + 1.0;
         
         while (it <= _max_iter && res > _tolerance ){
-
-        // Bottom and top wall
+            
+            // Applying pressure BC in the SOR loop 
+            
+            // Bottom and top
             for (int i = 1; i <= _grid.imax(); i++) {
                  _field.p(i,0) = _field.p(i,1);
                  _field.p(i,_grid.jmax()+1) = _field.p(i,_grid.jmax());
@@ -213,9 +217,8 @@ void Case::simulate() {
         }
 
         _field.calculate_velocities(_grid);
-        dt = _field.calculate_dt(_grid);
         t = t + dt;
-        // cout<<"t = "<<t<<endl;
+        cout<<"t = "<<t<<endl;
         timestep++;
     }
     output_vtk(timestep, _t_end);

@@ -35,13 +35,30 @@ void Fields::calculate_fluxes(Grid &grid) {
                        _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
         }
     }
+
+    /*
+    //Ghost cell flux BC
+
+
+      for (int i=1;i<grid.imax();i++){
+        for (int j=1;j<grid.jmax();j++){
+            // Eq 17 WS1 ghost cell flux BC
+            _G(i,0) = _V(i,0);
+            _G(i,grid.jmax()) = _V(i,grid.jmax());
+            // Eq 17 WS1 ghost cell flux BC
+            _F(0,j) = _U(0,j);
+            _F(grid.imax(),j) = _U(grid.imax(),j);
+        }  
+      }
+
+    */
 }
 
 void Fields::calculate_rs(Grid &grid) {
 
-    for (int i = 0; i < grid.imax() + 1; i++) {
-        for (int j = 0; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i + 1, j) - _F(i, j)) / grid.dx() + (_G(i + 1, j) - _G(i, j)) / grid.dy());
+    for (int i = 1; i < grid.imax() + 1; i++) {
+        for (int j = 1; j < grid.jmax() + 1; j++) {
+            _RS(i,j) = 1/_dt * ((_F(i, j) - _F(i-1 ,j)) * 1/grid.dx()+ (_G(i, j) - _G(i, j-1)) * 1/grid.dy());
         }
     }
 }
@@ -55,7 +72,7 @@ void Fields::calculate_velocities(Grid &grid) {
     double dx = grid.dx();
     double dy = grid.dy();
 
-    // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
+    // Velocity estimation on all fluid cells excluding right wall and top wall
     for (int i = 1; i < grid.imax(); i++) {
         for (int j = 1; j < grid.jmax() + 1; j++) {
             // U (Eq 7)
@@ -84,11 +101,11 @@ double Fields::calculate_dt(Grid &grid) {
     // Find Maximum values of U and V inside their fields: Umax, Vmax
     for (int j = 1; j < grid.jmax(); j++) {
         for (int i = 1; i < grid.imax(); i++) {
-            if (_U(i, j) > Umax) {
-                Umax = _U(i, j);
+            if (abs(_U(i, j)) > Umax) {
+                Umax = abs(_U(i, j));
             }
-            if (_V(i, j) > Vmax) {
-                Vmax = _V(i, j);
+            if (abs(_V(i, j)) > Vmax) {
+                Vmax = abs(_V(i, j));
             }
         }
     }
@@ -106,8 +123,8 @@ double Fields::calculate_dt(Grid &grid) {
     //_dt = std::min(dx / Umax, dy / Vmax, (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
 ======= 
 */
-    // cout<<"Umax = "<<Umax<<endl;
-    // cout<<"Vmax = "<<Umax<<endl;
+    std::cout<<"Umax = "<<Umax<<std::endl;
+
 
 
     double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );

@@ -30,7 +30,7 @@ void FixedWallBoundary::apply(Fields &field){
             // F on the left 
             field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
             
-            std::cout << " (i , j) " << cell->i() << " " << cell->j() << std::endl;
+            //std::cout << " (i , j) " << cell->i() << " " << cell->j() << std::endl;
 
         }
         if(cell->is_border(border_position::LEFT)){
