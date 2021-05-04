@@ -7,6 +7,8 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells) : _cells(cells) 
 FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature)
     : _cells(cells), _wall_temperature(wall_temperature) {}
 
+
+
 void FixedWallBoundary::apply(Fields &field){
     /** 
      * All boundaries except the top are fixed wall or no slip. 
@@ -19,6 +21,15 @@ void FixedWallBoundary::apply(Fields &field){
      * 
      */
     
+    // Applying u,v and F boundary conditions on every border
+    /*
+    Here we have something strange happening at the code. When we try to ensure the border positions at the right, it
+    shows the left and so otherwise (Also the TOP and Bottom). 
+    Hence, here we using the border position that is correct according to the i() andj() that is reversed, in order to get the correct border.
+
+    */
+
+    // Loop through all cells an applying boundary conditions if the cells in located at the border.
     for(auto cell: _cells){
         // Fix code duplication
         if(cell->is_border(border_position::RIGHT)){
@@ -61,6 +72,8 @@ void MovingWallBoundary::apply(Fields &field) {
 
     /* The top wall is a moving wall thus, the velocity on the top wall would be the velocity of the wall itself.*/
 
+    // Same aboveLoop through all cells an applying boundary conditions if the cells in located at the border.
+    // However this here, we have a moving wall so the wall velocity is accounted for.
 
     for(auto cell: _cells){
         // std::cout << "Moving wall velocity  = " << _wall_velocity[LidDrivenCavity::moving_wall_id] << std::endl;

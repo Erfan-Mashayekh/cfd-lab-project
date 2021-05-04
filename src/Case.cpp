@@ -174,29 +174,35 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
+    // Running message
+    std::cout << "Fluidchen is running and will print vtk output every 100 timestep !" << std::endl;
+
+    // initialization
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
 
-  
+    // time loop
+    while (t < _t_end) {
 
-    while (t < _t_end){
-        
-        // Set boundary values
-        for (auto & boundary: _boundaries){
+        // Calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid);
+
+        // Applying velocity boundary condition for every 4 sides of the wall boundary
+        for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
-        // Calculate Fn and Gn
+        // calculate Fn and Gn
         _field.calculate_fluxes(_grid);
 
-
-        // Calculate Righ-hand Side
+        // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
+        // SOR Loop
+        // Initialization of residual and iteration counter
         int it = 0;
-
         // Set initial tolerance
         double res = _tolerance + 1.0;        
         while (it < _max_iter && res > _tolerance ){
@@ -204,22 +210,36 @@ void Case::simulate() {
             // Set pressure Neumann Boundary Conditions
             _field.set_pressure_bc(_grid);
 
+            // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
 
+            // Increment the iteration counter
             it++;
         }
 
+        // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
 
+        // Calculate new time
         t = t + dt;
-        std::cout << "t = " << t << std::endl;
 
+        // Increment the time step counter
         timestep++;
 
-        dt = _field.calculate_dt(_grid);       
+        // Output the vtk every 100 timestep just for the sake of animation
+        if (timestep % 100 == 0) {
+            std::cout << "Printing vtk file at t = " << t << std::endl;
+            ;
+            output_vtk(timestep, t);
+        }
+     
     }
 
+    // Output the final VTK file
     output_vtk(timestep, _t_end);
+
+    // End message
+    std::cout << "Done !!";
 
 }
 

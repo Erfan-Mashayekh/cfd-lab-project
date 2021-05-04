@@ -5,8 +5,6 @@
 #include <vector>
 #include <cmath>
 
-using namespace std;
-
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI)
     : _nu(nu), _dt(dt), _tau(tau) {
     _U = Matrix<double>(imax + 2, jmax + 2, UI);
@@ -17,9 +15,9 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 
-    std::cout << "Value of nu = " << _nu << std::endl;
 }
 
+// Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid) {
 
     for (int j = 1; j < grid.jmax() + 1; j++) {
@@ -37,49 +35,48 @@ void Fields::calculate_fluxes(Grid &grid) {
     }
 }
 
+// calculate right hand side rhs of the pressure eq
 void Fields::calculate_rs(Grid &grid) {
 
     for (int i = 1; i < grid.imax() + 1; i++) {
         for (int j = 1; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) / grid.dx() + (_G(i, j) - _G(i, j - 1)) / grid.dy());
+            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) * (1 / grid.dx()) + (_G(i, j) - _G(i, j - 1)) * (1 / grid.dy()));
         }
     }
 }
 
+// Calculate the velocities at the next time step
 void Fields::calculate_velocities(Grid &grid) {
     /*
     Explicit euler is used here to discretize the momentum equation, resulting to the equation 7 and 8.
-
     Equation 7 and Equation 8 give the closed formula to determine the new velocities.
     */
 
-    int imax = grid.imax();
-    int jmax = grid.jmax();
     double dx = grid.dx();
     double dy = grid.dy();
 
-    // Velocity estimation on all fluid cells excluding right wall and top wall. (Eq 7,8 WS1)
-    for (int i = 1; i <= imax - 1; i++) {
-        for (int j = 1; j <= jmax; j++) {
+    // Velocity estimation on all fluid cells excluding right wall and top wall
+    for (int i = 1; i < grid.imax(); i++) {
+        for (int j = 1; j < grid.jmax() + 1; j++) {
             // U (Eq 7)
             _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
         }
     }
 
-    for (int i = 1; i <= imax; i++) {
-        for (int j = 1; j <= jmax - 1; j++) {
+    for (int i = 1; i < grid.imax() + 1; i++) {
+        for (int j = 1; j < grid.jmax(); j++) {
             // V (Eq 8)
             _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
         }
     }
 }
 
+// calculate dt for adaptive time stepping
 double Fields::calculate_dt(Grid &grid) {
 
     double dx = grid.dx();
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
-    //no problem with dx and dy
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
     for (int j = 1; j < grid.jmax(); j++) {
@@ -93,11 +90,11 @@ double Fields::calculate_dt(Grid &grid) {
         }
     }
 
-    double _dt1 =(dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
-
-    double _dt2 = grid.dx()/abs(Umax);
-
-    double _dt3 = grid.dy()/abs(Vmax);
+    // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
+    // and avoid oscillations
+    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
+    double _dt2 = grid.dx()/Umax;
+    double _dt3 = grid.dy()/Vmax;
 
     _dt =  _tau * std::min(std::min( _dt1 , _dt2), _dt3);
 
@@ -107,13 +104,13 @@ double Fields::calculate_dt(Grid &grid) {
 void Fields::set_pressure_bc(Grid &grid){
 
         // Bottom and top wall
-    for (int i = 1; i < _grid.imax(); i++) {
+    for (int i = 1; i < _grid.imax() + 1; i++) {
          _P(i, 0) = _P(i, 1);
          _P(i, _grid.jmax() + 1) = _P(i, _grid.jmax());
     }
 
     // Left and right wall
-    for (int j = 1; j < _grid.jmax(); j++) {
+    for (int j = 1; j < _grid.jmax() + 1; j++) {
          _P(0, j) = _P(1, j);
          _P(_grid.imax() + 1, j) = _P(_grid.imax(), j);
     }  
