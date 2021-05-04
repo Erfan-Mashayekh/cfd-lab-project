@@ -217,17 +217,18 @@ void Case::simulate() {
 
             // Increment the iteration counter
             it++;
+
             if (it == _max_iter) {
-                std::cout << "WARNING! Iteration counter reached the maximum iteration. (SOR did not converge)"<< std::endl;
             }                    
             
             // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
             /*
             The limit of the timestep that is used here should be changed if the grid or the dt is change. 
-            Here we use ten for our case because it is already converged belom that timestep.
+            Here we use 100 for our case because it is already converged below that timestep.
             */
 
-            if(it > _max_iter && timestep > 10) {
+            if(it > _max_iter && timestep > 100) {
+                std::cout << "WARNING! Iteration counter reached the maximum iteration."<< std::endl;
                 break;
             }
 
