@@ -181,58 +181,46 @@ void Case::simulate() {
 
   
 
-    while (t <= _t_end){
+    while (t < _t_end){
         
-        
+        // Set boundary values
         for (auto & boundary: _boundaries){
             boundary->apply(_field);
         }
 
+        // Calculate Fn and Gn
         _field.calculate_fluxes(_grid);
 
 
+        // Calculate Righ-hand Side
         _field.calculate_rs(_grid);
 
         int it = 0;
-        double res = _tolerance + 1.0;
-        
-        while (it <= _max_iter && res > _tolerance ){
 
-            // Bottom and top wall
-            for (int i = 1; i <= _grid.imax(); i++) {
-                 _field.p(i,0) = _field.p(i,1);
-                 _field.p(i,_grid.jmax()+1) = _field.p(i,_grid.jmax());
-            }
+        // Set initial tolerance
+        double res = _tolerance + 1.0;        
+        while (it < _max_iter && res > _tolerance ){
 
-            // Left and right wall
-            for (int j = 1; j <= _grid.jmax(); j++) {
-                 _field.p(0,j) = _field.p(1,j);
-                 _field.p(_grid.imax()+1,j) = _field.p(_grid.imax(),j);
-            }  
+            // Set pressure Neumann Boundary Conditions
+            _field.set_pressure_bc(_grid);
 
             res = _pressure_solver->solve(_field, _grid, _boundaries);
+
             it++;
         }
 
-        // if (...) {  // only check, if SOR has converged
-        //     // Check Neumann BCs for PPE
-        //     for (int i = 1; i <= _grid.imax(); i++) {
-        //         assert(abs(_field.p(i, 0) - _field.p(i, 1)) < _tolerance);
-        //         assert(abs(_field.p(i, _grid.jmax() + 1) - _field.p(i, _grid.jmax())) < _tolerance);
-        //     }
-        //     for (int j = 1; j <= _grid.jmax(); j++) {
-        //         assert(abs(_field.p(0, j) - _field.p(1, j)) < _tolerance);
-        //         assert(abs(_field.p(_grid.imax() + 1, j) - _field.p(_grid.imax(), j)) < _tolerance);
-        //     }
-        // }
-
         _field.calculate_velocities(_grid);
-        dt = _field.calculate_dt(_grid);
+
         t = t + dt;
-        cout<<"t = "<<t<<endl;
+        std::cout << "t = " << t << std::endl;
+
         timestep++;
+
+        dt = _field.calculate_dt(_grid);       
     }
+
     output_vtk(timestep, _t_end);
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

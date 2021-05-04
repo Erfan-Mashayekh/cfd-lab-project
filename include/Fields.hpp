@@ -62,6 +62,14 @@ class Fields {
      */
     double calculate_dt(Grid &grid);
 
+    /**
+    * @brief Set the Neumann boundary conditions .
+    * This should be done at each iteration of solve() in SOR.
+    *
+    * @param[in] grid in which the calculations are done
+    */
+    void set_pressure_bc(Grid &grid);
+
     /// x-velocity index based access and modify
     double &u(int i, int j);
 
