@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <cassert>
 
 namespace filesystem = std::filesystem;
 
@@ -174,15 +175,15 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
-    // Running message
-    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second !" << std::endl;
+    assert(_output_freq > 0); //
+    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
 
     // initialization
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    int step = 0;
+    double step = 0;
     // time loop
     while (t < _t_end) {
 
@@ -215,23 +216,18 @@ void Case::simulate() {
             // Increment the iteration counter
             it++;
 
-            if (it == _max_iter) {
-            }                    
-            
             // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
             /*
             The limit of the timestep that is used here should be changed if the grid or the dt is change. 
             Here we use 100 for our case because it is already converged below that timestep.
             */
 
-            if(it > _max_iter && timestep > 100) {
-                std::cout << "WARNING! Iteration counter reached the maximum iteration."<< std::endl;
+            if(it > _max_iter && timestep > 10) {
+                std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
                 break;
             }
-
         }
 
-        
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
@@ -245,9 +241,10 @@ void Case::simulate() {
         // Calculate dt for adaptive time stepping
         dt = _field.calculate_dt(_grid);
 
+
         // Output the vtk every 1s
-        if (std::floor(t) > (step + _output_freq - 1)) {
-            step = std::floor(t);
+        if (t >= step + _output_freq) {
+            step = step + _output_freq;
             std::cout << "Printing vtk file at t = " << step << std::endl;
             output_vtk(step, 0);
         }
@@ -258,7 +255,7 @@ void Case::simulate() {
     output_vtk(step, 0);
 
     // End message
-    std::cout << "Done !\n";
+    std::cout << "Done!\n";
 
 }
 
