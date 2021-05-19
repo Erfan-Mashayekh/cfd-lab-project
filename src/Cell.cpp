@@ -2,9 +2,20 @@
 
 #include <iostream>
 
-Cell::Cell(int i, int j, cell_type type) : _i(i), _j(j), _type(type) {}
 
-Cell::Cell(int i, int j, cell_type type, int id) : _i(i), _j(j), _type(type), _id(id) {}
+
+
+Cell::Cell(int i, int j, cell_type type, int id) : _i(i), _j(j), _type(type), _id(id) {
+
+    _cell_neighbour_exist.North = 0;
+    _cell_neighbour_exist.South = 0;
+    _cell_neighbour_exist.East = 0;
+    _cell_neighbour_exist.West = 0;
+
+}
+
+
+Cell::Cell(int i, int j, cell_type type) : _i(i), _j(j), _type(type) {}
 
 // borders Get and Set
 bool Cell::is_border(border_position position) const { return _border.at(static_cast<int>(position)); };
@@ -27,3 +38,17 @@ int Cell::j() const { return _j; }
 cell_type Cell::type() const { return _type; }
 
 int Cell::wall_id() const { return _id; }
+
+
+void Cell::SetCellNeighbour(bool a,bool b,bool c,bool d)
+{
+    _cell_neighbour_exist.North = a;
+    _cell_neighbour_exist.South = b;
+    _cell_neighbour_exist.East = c;
+    _cell_neighbour_exist.West = d;
+}
+
+cellNeighbourBool Cell::CheckNeighbour()
+{
+    return _cell_neighbour_bool;
+}

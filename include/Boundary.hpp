@@ -56,3 +56,49 @@ class MovingWallBoundary : public Boundary {
     std::map<int, double> _wall_velocity;
     std::map<int, double> _wall_temperature;
 };
+
+class InflowBoundary : public Boundary {
+  public:
+    InflowBoundary(std::vector<Cell *> cells, double UIN);
+    InflowBoundary(std::vector<Cell *> cells, std::map<int, double> UIN, std::map<int, double> TIN);
+    virtual ~InflowBoundary() = default;
+    virtual void apply(Fields &field);
+
+  private:
+    std::vector<Cell *> _cells;
+    std::map<int, double> _UIN;
+    std::map<int, double> _TIN;
+};
+
+class OutflowBoundary : public Boundary {
+  public:
+    OutflowBoundary(std::vector<Cell *> cells);
+    virtual ~OutflowBoundary() = default;
+    virtual void apply(Fields &field);
+
+  private:
+    std::vector<Cell *> _cells;
+};
+
+class NoSlipBoundary : public Boundary {
+  public:
+    NoSlipBoundary(std::vector<Cell *> cells);
+    NoSlipBoundary(std::vector<Cell *> cells, double wall_temperature);
+    virtual void apply(Fields &field);
+
+  private:
+    std::vector<Cell *> _cells;
+    double _wall_temperature
+};
+
+class FreeSlipBoundary : public Boundary {
+  public:
+    FreeSlipBoundary(std::vector<Cell *> cells);
+    FreeSlipBoundary(std::vector<Cell *> cells, double wall_temperature);
+    virtual ~FreeSlipBoundary() = default;
+    virtual void apply(Fields &field);
+
+  private:
+    std::vector<Cell *> _cells;
+    double _wall_temperature;
+};

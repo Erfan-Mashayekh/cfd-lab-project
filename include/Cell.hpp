@@ -5,6 +5,16 @@
 
 #include "Enums.hpp"
 
+class cellNeighbourExist
+  public:
+    {
+      bool North;
+      bool South;
+      bool West;
+      bool East;
+    };
+
+
 /**
  * @brief Main element of the grid that holds neighboring and type
  * information.
@@ -80,6 +90,9 @@ class Cell {
     cell_type type() const;
     /// Getter of cell id
     int wall_id() const;
+    void SetCellNeighbour(bool,bool,bool,bool);
+    cellNeighbourExist CheckNeighbour();
+
 
   private:
     /// x index

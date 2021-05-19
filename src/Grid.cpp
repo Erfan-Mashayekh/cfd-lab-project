@@ -69,6 +69,154 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             ++i;
         }
         ++j;
+
+
+
+
+    //Neighbour Assignment
+
+    // Corner cell 
+    // Bottom-Left Corner 
+    bool a = 0 ,b = 0 ,c = 0 ,d = 0 ;
+    i = 0;
+    j = 0;
+    if (_cells(i+1, j).type() == cell_type::FLUID) {
+        e = true;
+    }
+    if (_cells(i, j+1).type() == cell_type::FLUID) {
+        n = true ;
+    }
+    _cells(i,j).SetCellNeighbour(a,b,c,d);
+
+    // Top-Left Corner
+    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+    i = 0;
+    j = _domain.size_y + 1;
+    if (_cells(i+1, j).type() == cell_type::FLUID) {
+        e = true;
+    }
+    if (_cells(i, j-1).type() == cell_type::FLUID) {
+        s = true ;
+    }
+    _cells(i,j).SetCellNeighbour(a,b,c,d);
+
+    // Top-Right Corner 
+    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+    i = _domain.size_x + 1;
+    j = Grid::_domain.size_y + 1;
+    if (_cells(i-1, j).type() == cell_type::FLUID) {
+        w = true;
+    }
+    if (_cells(i, j-1).type() == cell_type::FLUID) {
+        s = true ;
+    }
+    _cells(i,j).SetCellNeighbour(a,b,c,d);
+
+    // Bottom-Right Corner 
+    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+    i = Grid::_domain.size_x + 1;
+    j = 0;
+    if (_cells(i-1, j).type() == cell_type::FLUID) {
+        w = true;
+    }
+    if (_cells(i, j+1).type() == cell_type::FLUID) {
+        n = true ;
+    }
+    _cells(i,j).SetCellNeighbour(a,b,c,d);
+    
+    
+    // Bottom cells
+    j = 0;
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+        if (_cells(i-1, j).type() == cell_type::FLUID) {
+            w = true;
+        }
+        if (_cells(i, j+1).type() == cell_type::FLUID) {
+            n = true ;
+        }
+        if (_cells(i+1, j).type() == cell_type::FLUID) {
+            e = true ;
+        }
+        _cells(i,j).SetCellNeighbour(a,b,c,d);
+    }
+
+    // Top Cells
+    j = Grid::_domain.size_y + 1;
+
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+        if (_cells(i-1, j).type() == cell_type::FLUID) {
+            w = true;
+        }
+        if (_cells(i, j-1).type() == cell_type::FLUID) {
+            s = true ;
+        }
+        if (_cells(i+1, j).type() == cell_type::FLUID) {
+            e = true ;
+        }
+        _cells(i,j).SetCellNeighbour(a,b,c,d);
+    }
+
+    // Left Cells
+    i = 0;
+    for (int j = 1; j < _domain.size_y + 1; ++j) {
+        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+        if (_cells(i, j+1).type() == cell_type::FLUID) {
+            n = true;
+        }
+        if (_cells(i, j-1).type() == cell_type::FLUID) {
+            s = true ;
+        }
+        if (_cells(i+1, j).type() == cell_type::FLUID) {
+            e = true ;
+        }
+        _cells(i,j).SetCellNeighbour(a,b,c,d);
+    }
+    // Right Cells
+    i = Grid::_domain.size_x + 1;
+    for (int j = 1; j < _domain.size_y + 1; ++j) {
+        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+        if (_cells(i, j+1).type() == cell_type::FLUID) {
+            n = true;
+        }
+        if (_cells(i, j-1).type() == cell_type::FLUID) {
+            s = true ;
+        }
+        if (_cells(i-1, j).type() == cell_type::FLUID) {
+            w = true ;
+        }
+        _cells(i,j).SetCellNeighbour(a,b,c,d);
+    }
+
+    // Inner cells
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+        for (int j = 1; j < _domain.size_y + 1; ++j) {
+            a = 0 ;b = 0 ;c = 0 ;d = 0 ;
+            if (_cells(i, j+1).type() == cell_type::FLUID) {
+                n = true;
+            }
+            if (_cells(i, j-1).type() == cell_type::FLUID) {
+                s = true ;
+            }
+            if (_cells(i-1, j).type() == cell_type::FLUID) {
+                w = true ;
+            }
+            if (_cells(i+1, j).type() == cell_type::FLUID) {
+                e = true ;
+            }
+            _cells(i,j).SetCellNeighbour(a,b,c,d);
+        }
+    }
+
+
+
+
+
+
+
+
+
     }
 
     // Corner cell neighbour assigment
@@ -208,6 +356,10 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                     _cells(i, j).add_border(border_position::TOP);
                 }
             }
+
+
+
+
         }
     }
 }

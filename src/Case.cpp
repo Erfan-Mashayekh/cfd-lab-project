@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <cassert>
 
 namespace filesystem = std::filesystem;
 
@@ -174,26 +175,88 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
+    assert(_output_freq > 0); //
+    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
+
+    // initialization
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    double step = 0;
+    // time loop
+    while (t < _t_end) {
 
-    _field.calculate_dt(_grid);
-    for (auto & boundary: _boundaries){
-        boundary->apply(_field);
-    }
-    _field.calculate_fluxes(_grid);
-    _field.calculate_rs(_grid);
+        // Applying velocity boundary condition for every 4 sides of the wall boundary
+        for (auto &boundary : _boundaries) {
+            boundary->apply(_field);
+        }
 
-    int it = 0;
-    double res = _tolerance + 1.0;
-    while (it <= _max_iter && res > _tolerance ){
-        res = _pressure_solver->solve(_field, _grid, _boundaries);
-        it++;
+        // calculate Fn and Gn
+        _field.calculate_fluxes(_grid);
+
+        // Calculate Right-hand side of the pressure eq.
+        _field.calculate_rs(_grid);
+
+        // SOR Loop
+        // Initialization of residual and iteration counter
+        int it = 0;
+        // Set initial tolerance
+        double res = _tolerance + 1.0;        
+        
+        while (res > _tolerance){
+            
+          
+            // Set pressure Neumann Boundary Conditions
+            _field.set_pressure_bc(_grid);
+
+            // Perform SOR Solver and retrieve esidual for the loop continuity
+            res = _pressure_solver->solve(_field, _grid, _boundaries);
+
+            // Increment the iteration counter
+            it++;
+
+            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
+            /*
+            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
+            Here we use 100 for our case because it is already converged below that timestep.
+            */
+
+            if(it > _max_iter && timestep > 10) {
+                std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+                break;
+            }
+        }
+
+
+        // Calculate the velocities at the next time step
+        _field.calculate_velocities(_grid);
+
+        // Calculate new time
+        t = t + dt;
+
+        // Increment the time step counter
+        timestep++;
+
+        // Calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid);
+
+
+        // Output the vtk every 1s
+        if (t >= step + _output_freq) {
+            step = step + _output_freq;
+            std::cout << "Printing vtk file at t = " << step << std::endl;
+            output_vtk(step, 0);
+        }
+     
     }
-    
-    _field.calculate_velocities(_grid);
+
+    // Output the final VTK file
+    output_vtk(step, 0);
+
+    // End message
+    std::cout << "Done!\n";
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
