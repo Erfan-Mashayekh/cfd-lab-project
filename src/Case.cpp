@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <cassert>
+#include <regex>
 
 namespace filesystem = std::filesystem;
 
@@ -24,22 +25,33 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
-    double nu;      /* viscosity   */
+    std::string geo_file; /* geometry file name */
+    double nu;      /* viscosity */
     double UI;      /* velocity x-direction */
     double VI;      /* velocity y-direction */
     double PI;      /* pressure */
     double GX;      /* gravitation x-direction */
     double GY;      /* gravitation y-direction */
-    double xlength; /* length of the domain x-dir.*/
-    double ylength; /* length of the domain y-dir.*/
+    double xlength; /* length of the domain x-dir. */
+    double ylength; /* length of the domain y-dir. */
     double dt;      /* time step */
-    int imax;       /* number of cells x-direction*/
-    int jmax;       /* number of cells y-direction*/
-    double gamma;   /* uppwind differencing factor*/
+    int imax;       /* number of cells x-direction */
+    int jmax;       /* number of cells y-direction */
+    double gamma;   /* uppwind differencing factor */
     double omg;     /* relaxation factor */
-    double tau;     /* safety factor for time step*/
+    double tau;     /* safety factor for time step */
     int itermax;    /* max. number of iterations for pressure per time step */
-    double eps;     /* accuracy bound for pressure*/
+    double eps;     /* accuracy bound for pressure */
+    double UIN; 	/* inlet velocity x-direction */
+    double VIN; 	/* inlet velocity y-direction */
+    bool energy_eq; /* if energy equation is turned on */
+    double TI;		/* initial temperature */
+    double TIN;		/* inlet temperature */
+    double beta; 	/* thermal expansion coefficient */
+    double alpha;	/* thermal diffusivity */
+    int num_walls;  /* number of walls */
+    std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
+    std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
 
     if (file.is_open()) {
 
@@ -49,6 +61,7 @@ Case::Case(std::string file_name, int argn, char **args) {
             if (var[0] == '#') { /* ignore comment line*/
                 file.ignore(MAX_LINE_LENGTH, '\n');
             } else {
+                if (var == "geo_file") file >> _geom_name;
                 if (var == "xlength") file >> xlength;
                 if (var == "ylength") file >> ylength;
                 if (var == "nu") file >> nu;
@@ -67,12 +80,39 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "itermax") file >> itermax;
                 if (var == "imax") file >> imax;
                 if (var == "jmax") file >> jmax;
+				if (var == "UIN") file >> UIN; 	                 
+				if (var == "VIN") file >> VIN; 	 
+				if (var == "energy_eq"){
+                    if (var == "on") energy_eq = true;
+                    else energy_eq = false;
+                }
+				if (var == "TI") file >> TI;		 
+				if (var == "TIN") file >> TIN;		 
+				if (var == "beta") file >> beta; 	 
+				if (var == "alpha") file >> alpha;	 
+				if (var == "num_walls") file >> num_walls;
+
+                std::string str_vel = "wall_vel";
+                std::string str_temp = "wall_temp";
+                std::regex match_idx("[0-9][0-9]*");
+                std::smatch idx;
+                double value;
+                std::regex_search(var, idx, match_idx);
+
+                if (std::search(var.begin(), var.end(), str_vel.begin(), str_vel.end()) != var.end()){
+                    file >> value;
+                    wall_vel.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
+                }
+                if (std::search(var.begin(), var.end(), str_temp.begin(), str_temp.end()) != var.end()){
+                    file >> value;
+                    wall_temp.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
+                }
             }
         }
     }
     file.close();
 
-    std::map<int, double> wall_vel;
+    // TODO : Generalize this part
     if (_geom_name.compare("NONE") == 0) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
     }
