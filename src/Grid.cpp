@@ -54,22 +54,30 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
-
+                // Fluid 
                 _cells(i, j) = Cell(i, j, cell_type::FLUID);
                 _fluid_cells.push_back(&_cells(i, j));
-
-            } else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id) {
-
+            } else if (geometry_data.at(i_geom).at(j_geom) == 1) {
+                // Inlet
+                _cells(i, j) = Cell(i, j, cell_type::INFLOW);
+                _inflow_cells.push_back(&_cells(i, j));
+            } else if (geometry_data.at(i_geom).at(j_geom) == 2) {
+                // Outlet
+                _cells(i, j) = Cell(i, j, cell_type::OUTFLOW);
+                _outflow_cells.push_back(&_cells(i, j));
+            } else if (geometry_data.at(i_geom).at(j_geom) >= 3, geometry_data.at(i_geom).at(j_geom) <= 6) {
+                // Fixed wall
+                _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
+                _fixed_wall_cells.push_back(&_cells(i, j));
+            } else if (geometry_data.at(i_geom).at(j_geom) == 8) {
+                // Moving wall
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
                 _moving_wall_cells.push_back(&_cells(i, j));
-                
-            } else {
-                if (i == 0 or j == 0 or i == _domain.size_x + 1 or j == _domain.size_y + 1) {
-                    // Outer walls
-                    _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
-                    _fixed_wall_cells.push_back(&_cells(i, j));
-                }
-            }
+            } else (geometry_data.at(i_geom).at(j_geom) == 7) {
+                // Free slip
+                _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
+                _free_slip_cells.push_back(&_cells(i, j));
+            } 
 
             ++i;
         }
@@ -273,3 +281,9 @@ const std::vector<Cell *> &Grid::fluid_cells() const { return _fluid_cells; }
 const std::vector<Cell *> &Grid::fixed_wall_cells() const { return _fixed_wall_cells; }
 
 const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall_cells; }
+
+const std::vector<Cell *> &Grid::free_slip_cells() const{ return _free_slip_cells; }
+
+const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
+
+const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }

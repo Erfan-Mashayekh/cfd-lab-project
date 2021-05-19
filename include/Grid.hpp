@@ -72,6 +72,27 @@ class Grid {
      */
     const std::vector<Cell *> &fixed_wall_cells() const;
 
+    /**
+     * @brief Access free slip wall cells
+     *
+     * @param[out] vector of free slip wall cells
+     */
+    const std::vector<Cell *> &free_slip_cells() const;
+
+    /**
+     * @brief Access inflow wall cells
+     *
+     * @param[out] vector of inflow wall cells
+     */
+    const std::vector<Cell *> &inflow_cells() const;
+
+    /**
+     * @brief Access outflow cells
+     *
+     * @param[out] vector of outflow cells
+     */
+    const std::vector<Cell *> &outflow_cells() const;
+
   private:
     /**@brief Default lid driven cavity case generator
      *
@@ -86,9 +107,13 @@ class Grid {
     void parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data);
 
     Matrix<Cell> _cells;
+
     std::vector<Cell *> _fluid_cells;
+    std::vector<Cell *> _inflow_cells;
+    std::vector<Cell *> _outflow_cells;
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
+    std::vector<Cell *> _free_slip_cells;
 
     Domain _domain;
 

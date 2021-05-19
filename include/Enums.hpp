@@ -29,5 +29,7 @@ enum class cell_type {
     FLUID,
     FIXED_WALL,
     MOVING_WALL,
-    DEFAULT
+    INFLOW,
+    OUTFLOW, 
+    FREE_SLIP_WALL
 };
