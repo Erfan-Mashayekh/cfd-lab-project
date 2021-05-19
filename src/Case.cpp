@@ -7,7 +7,6 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <cassert>
 
 namespace filesystem = std::filesystem;
 
@@ -175,19 +174,22 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
-    assert(_output_freq > 0); //
-    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
+    // Running message
+    std::cout << "Fluidchen is running and will print vtk output every 100 timestep !" << std::endl;
 
     // initialization
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    double step = 0;
-    // time loop
-    while (t < _t_end) {
 
-        // Applying velocity boundary condition for every 4 sides of the wall boundary
+    // time loop
+    while (t <= _t_end) {
+
+        // calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid);
+
+        // applying velocity boundary condition for every 4 sides of the wall boundary
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
@@ -195,68 +197,61 @@ void Case::simulate() {
         // calculate Fn and Gn
         _field.calculate_fluxes(_grid);
 
-        // Calculate Right-hand side of the pressure eq.
+        // calculate right hand side rhs of the pressure eq
         _field.calculate_rs(_grid);
 
         // SOR Loop
         // Initialization of residual and iteration counter
         int it = 0;
-        // Set initial tolerance
-        double res = _tolerance + 1.0;        
-        
-        while (res > _tolerance){
-            
-          
-            // Set pressure Neumann Boundary Conditions
-            _field.set_pressure_bc(_grid);
+        double res = _tolerance + 1.0;
+
+        // SOR loop begin
+        while (it <= _max_iter && res > _tolerance) {
+
+            // Applying pressure boundary condition for every 4 sides of the wall boundary
+
+            // Bottom & top
+            for (int i = 1; i <= _grid.imax(); i++) {
+                _field.p(i, 0) = _field.p(i, 1);
+                _field.p(i, _grid.jmax() + 1) = _field.p(i, _grid.jmax());
+            }
+
+            // Left & right
+            for (int j = 1; j <= _grid.jmax(); j++) {
+                _field.p(0, j) = _field.p(1, j);
+                _field.p(_grid.imax() + 1, j) = _field.p(_grid.imax(), j);
+            }
 
             // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
 
             // Increment the iteration counter
             it++;
-
-            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
-            /*
-            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
-            Here we use 100 for our case because it is already converged below that timestep.
-            */
-
-            if(it > _max_iter && timestep > 10) {
-                std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
-                break;
-            }
         }
-
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
 
         // Calculate new time
         t = t + dt;
+        // cout << "t = " << t << endl;
 
         // Increment the time step counter
         timestep++;
 
-        // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid);
-
-
-        // Output the vtk every 1s
-        if (t >= step + _output_freq) {
-            step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << std::endl;
-            output_vtk(step, 0);
+        // Output the vtk every 100 timestep just for the sake of animation
+        if (timestep % 100 == 0) {
+            std::cout << "Printing vtk file at t = " << t << std::endl;
+            ;
+            output_vtk(timestep, t);
         }
-     
     }
 
     // Output the final VTK file
-    output_vtk(step, 0);
+    output_vtk(timestep, _t_end);
 
     // End message
-    std::cout << "Done!\n";
-
+    std::cout << "Done !!";
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

@@ -40,7 +40,7 @@ void Fields::calculate_rs(Grid &grid) {
 
     for (int i = 1; i < grid.imax() + 1; i++) {
         for (int j = 1; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) * (1 / grid.dx()) + (_G(i, j) - _G(i, j - 1)) * (1 / grid.dy()));
+            _RS(i,j) = 1/_dt * ((_F(i, j) - _F(i-1 ,j)) * 1/grid.dx()+ (_G(i, j) - _G(i, j-1)) * 1/grid.dy());
         }
     }
 }
@@ -78,6 +78,7 @@ double Fields::calculate_dt(Grid &grid) {
     double dy = grid.dy();
     double Umax = 0.0, Vmax = 0.0;
 
+
     // Find Maximum values of U and V inside their fields: Umax, Vmax
     for (int j = 1; j < grid.jmax(); j++) {
         for (int i = 1; i < grid.imax(); i++) {
@@ -92,38 +93,26 @@ double Fields::calculate_dt(Grid &grid) {
 
     // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
     // and avoid oscillations
-    // double _dt1 = (0.5/_nu) * pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
-    double _dt1 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
+    double _dt1 = (0.5/_nu)*pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
     double _dt2 = grid.dx()/Umax;
     double _dt3 = grid.dy()/Vmax;
 
-    _dt =  _tau * std::min(std::min( _dt1 , _dt2), _dt3);
+    _dt = std::min( _dt1 , _dt2);
+    _dt = std::min( _dt , _dt3);
+    _dt = _tau*_dt;
 
     return _dt;
 }
 
-void Fields::set_pressure_bc(Grid &grid){
 
-    // Bottom and top wall
-    for (int i = 1; i < grid.imax() + 1; i++) {
-         _P(i, 0) = _P(i, 1);
-         _P(i, grid.jmax() + 1) = _P(i, grid.jmax());
-    }
 
-    // Left and right wall
-    for (int j = 1; j < grid.jmax() + 1; j++) {
-         _P(0, j) = _P(1, j);
-         _P(grid.imax() + 1, j) = _P(grid.imax(), j);
-    }  
-}
+    double &Fields::p(int i, int j) { return _P(i, j); }
+    double &Fields::u(int i, int j) { return _U(i, j); }
+    double &Fields::v(int i, int j) { return _V(i, j); }
+    double &Fields::f(int i, int j) { return _F(i, j); }
+    double &Fields::g(int i, int j) { return _G(i, j); }
+    double &Fields::rs(int i, int j) { return _RS(i, j); }
 
-double &Fields::p(int i, int j) { return _P(i, j); }
-double &Fields::u(int i, int j) { return _U(i, j); }
-double &Fields::v(int i, int j) { return _V(i, j); }
-double &Fields::f(int i, int j) { return _F(i, j); }
-double &Fields::g(int i, int j) { return _G(i, j); }
-double &Fields::rs(int i, int j) { return _RS(i, j); }
+    Matrix<double> &Fields::p_matrix() { return _P; }
 
-Matrix<double> &Fields::p_matrix() { return _P; }
-
-double Fields::dt() const { return _dt; }
+    double Fields::dt() const { return _dt; }
