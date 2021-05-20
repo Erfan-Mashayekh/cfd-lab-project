@@ -73,7 +73,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Moving wall
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
                 _moving_wall_cells.push_back(&_cells(i, j));
-            } else (geometry_data.at(i_geom).at(j_geom) == 9) {
+            } else if (geometry_data.at(i_geom).at(j_geom) == 9) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
                 _free_slip_cells.push_back(&_cells(i, j));

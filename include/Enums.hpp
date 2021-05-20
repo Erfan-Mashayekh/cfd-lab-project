@@ -30,5 +30,6 @@ enum class cell_type {  /** PGM INDEX **/
     OUTFLOW,            /*     2       */
     FIXED_WALL,         /*     3-7     */
     MOVING_WALL,        /*     8       */
-    FREE_SLIP_WALL      /*     9       */
+    FREE_SLIP_WALL,     /*     9       */
+    DEFAULT             /*             */
 };                      /***************/

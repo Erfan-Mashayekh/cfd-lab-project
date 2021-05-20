@@ -32,7 +32,7 @@ class InflowBoundary : public Boundary {
     InflowBoundary(std::vector<Cell *> cells, double inlet_velocity_x, double inlet_velocity_y,
                                                                        double inlet_temperature);
     virtual ~InflowBoundary() = default;
-    virtual void apply(Fields &field) override;
+    virtual void apply(Fields &field);// override;
 
   private:
     std::vector<Cell *> _cells;
@@ -50,7 +50,7 @@ class OutflowBoundary : public Boundary {
     OutflowBoundary(std::vector<Cell *> cells);
 
     virtual ~OutflowBoundary() = default;
-    virtual void apply(Fields &field) override;
+    virtual void apply(Fields &field);// override;
 
   private:
     std::vector<Cell *> _cells;
@@ -98,9 +98,9 @@ class MovingWallBoundary : public Boundary {
 class FreeSlipBoundary : public Boundary {
   public:
     FreeSlipBoundary(std::vector<Cell *> cells);
-    FreeSlipBoundary(std::vector<Cell *> cells, double wall_temperature);
+    FreeSlipBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature);
     virtual ~FreeSlipBoundary() = default;
-    virtual void apply(Fields &field) override;
+    virtual void apply(Fields &field);// override;
 
   private:
     std::vector<Cell *> _cells;

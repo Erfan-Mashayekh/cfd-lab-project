@@ -40,6 +40,9 @@ FreeSlipBoundary::FreeSlipBoundary(std::vector<Cell *> cells, std::map<int, doub
 *
 **************************************/
 
+void InflowBoundary::apply(Fields &field){}
+
+void OutflowBoundary::apply(Fields &field){}
 
 void FixedWallBoundary::apply(Fields &field){
     /** 
@@ -112,3 +115,6 @@ void MovingWallBoundary::apply(Fields &field) {
         }
     }
 }
+
+
+void FreeSlipBoundary::apply(Fields &field) {}
