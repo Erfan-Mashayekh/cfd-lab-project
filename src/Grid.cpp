@@ -13,33 +13,15 @@ Grid::Grid(std::string geom_name, Domain &domain) {
 
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
 
-    if (geom_name.compare("NONE") != 0) {
-        std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
-                                                    std::vector<int>(_domain.domain_size_y + 2, 0));
-        parse_geometry_file(geom_name, geometry_data);
-        assign_cell_types(geometry_data);
-    } else {
-        build_lid_driven_cavity();
-    }
-}
+    if (geom_name.compare("NONE") == 0) {
+        std::cout << "Error: Please provide a geometry data file as a .pgm file in the .dat file!. Exiting!\n";
+        exit(EXIT_FAILURE);
+    } 
 
-void Grid::build_lid_driven_cavity() {
     std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
                                                 std::vector<int>(_domain.domain_size_y + 2, 0));
-
-    for (int i = 0; i < _domain.domain_size_x + 2; ++i) {
-        for (int j = 0; j < _domain.domain_size_y + 2; ++j) {
-            // Bottom, left and right walls: no-slip
-            if (i == 0 || j == 0 || i == _domain.domain_size_x + 1) {
-                geometry_data.at(i).at(j) = LidDrivenCavity::fixed_wall_id;
-            }
-            // Top wall: moving wall
-            else if (j == _domain.domain_size_y + 1) {
-                geometry_data.at(i).at(j) = LidDrivenCavity::moving_wall_id;
-            }
-        }
-    }
-    assign_cell_types(geometry_data);
+    parse_geometry_file(geom_name, geometry_data);
+    assign_cell_types(geometry_data);    
 }
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
@@ -54,7 +36,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
-                // Fluid 
+                // Fluid
                 _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data.at(i_geom).at(j_geom));
                 _fluid_cells.push_back(&_cells(i, j));
             } else if (geometry_data.at(i_geom).at(j_geom) == 1) {

@@ -96,12 +96,6 @@ class Grid {
 
 
   private:
-    /**@brief Default lid driven cavity case generator
-     *
-     * This function creates default lid driven cavity
-     * case without need for a pgm file
-     */
-    void build_lid_driven_cavity();
 
     /// Build cell data structures with given geometrical data
     void assign_cell_types(std::vector<std::vector<int>> &geometry_data);
