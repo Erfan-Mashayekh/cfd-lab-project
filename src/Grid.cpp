@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cassert>
 
 Grid::Grid(std::string geom_name, Domain &domain) {
 
@@ -232,7 +233,8 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    int array[numrows][numcols];
+    assert(numrows == geometry_data.size() && "Dimension mismatch: .pgm vs .dat");
+    assert(numcols == geometry_data[0].size() && "Dimension mismatch: .pgm vs .dat");
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {
