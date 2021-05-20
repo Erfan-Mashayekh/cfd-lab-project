@@ -80,16 +80,16 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "itermax") file >> itermax;
                 if (var == "imax") file >> imax;
                 if (var == "jmax") file >> jmax;
-                if (var == "UIN") file >> UIN;                   
-                if (var == "VIN") file >> VIN;   
+                if (var == "UIN") file >> UIN;
+                if (var == "VIN") file >> VIN;
                 if (var == "energy_eq"){
                     if (var == "on") energy_eq = true;
                     else energy_eq = false;
                 }
-                if (var == "TI") file >> TI;         
-                if (var == "TIN") file >> TIN;       
-                if (var == "beta") file >> beta;     
-                if (var == "alpha") file >> alpha;   
+                if (var == "TI") file >> TI;
+                if (var == "TIN") file >> TIN;
+                if (var == "beta") file >> beta;
+                if (var == "alpha") file >> alpha;
                 if (var == "num_walls") file >> num_walls;
 
                 std::string str_vel = "wall_vel";
@@ -112,11 +112,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     file.close();
 
-    // TODO : Generalize this part
-    if (_geom_name.compare("NONE") == 0) {
-        wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
-    }
-
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
@@ -138,22 +133,42 @@ Case::Case(std::string file_name, int argn, char **args) {
     _tolerance = eps;
 
     // Construct boundaries
-    if (not _grid.moving_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel ));
-    }
-    if (not _grid.fixed_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
-    }
+    // Inflow
     if (not _grid.inflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
+        } else {
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
+        }
     }
+    // Outflow
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
+    // Fixed wall
+    if (not _grid.fixed_wall_cells().empty()) {
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        }
+    }
+    // Moving wall
+    if (not _grid.moving_wall_cells().empty()) {
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
+        }
+    }
+    // Free slip
     if (not _grid.free_slip_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
-    }    
-
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
+        } 
+    }
 }
 
 void Case::set_file_names(std::string file_name) {
