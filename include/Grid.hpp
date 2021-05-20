@@ -59,27 +59,6 @@ class Grid {
     const std::vector<Cell *> &fluid_cells() const;
 
     /**
-     * @brief Access moving wall cells
-     *
-     * @param[out] vector of moving wall cells
-     */
-    const std::vector<Cell *> &moving_wall_cells() const;
-
-    /**
-     * @brief Access fixed wall cells
-     *
-     * @param[out] vector of fixed wall cells
-     */
-    const std::vector<Cell *> &fixed_wall_cells() const;
-
-    /**
-     * @brief Access free slip wall cells
-     *
-     * @param[out] vector of free slip wall cells
-     */
-    const std::vector<Cell *> &free_slip_cells() const;
-
-    /**
      * @brief Access inflow wall cells
      *
      * @param[out] vector of inflow wall cells
@@ -92,6 +71,29 @@ class Grid {
      * @param[out] vector of outflow cells
      */
     const std::vector<Cell *> &outflow_cells() const;
+
+    /**
+     * @brief Access fixed wall cells
+     *
+     * @param[out] vector of fixed wall cells
+     */
+    const std::vector<Cell *> &fixed_wall_cells() const;
+
+    /**
+     * @brief Access moving wall cells
+     *
+     * @param[out] vector of moving wall cells
+     */
+    const std::vector<Cell *> &moving_wall_cells() const;
+
+    /**
+     * @brief Access free slip wall cells
+     *
+     * @param[out] vector of free slip wall cells
+     */
+    const std::vector<Cell *> &free_slip_cells() const;
+
+
 
   private:
     /**@brief Default lid driven cavity case generator

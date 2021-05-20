@@ -55,17 +55,17 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 // Fluid 
-                _cells(i, j) = Cell(i, j, cell_type::FLUID);
+                _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data.at(i_geom).at(j_geom));
                 _fluid_cells.push_back(&_cells(i, j));
             } else if (geometry_data.at(i_geom).at(j_geom) == 1) {
                 // Inlet
-                _cells(i, j) = Cell(i, j, cell_type::INFLOW);
+                _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data.at(i_geom).at(j_geom));
                 _inflow_cells.push_back(&_cells(i, j));
             } else if (geometry_data.at(i_geom).at(j_geom) == 2) {
                 // Outlet
-                _cells(i, j) = Cell(i, j, cell_type::OUTFLOW);
+                _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
                 _outflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) >= 3, geometry_data.at(i_geom).at(j_geom) <= 6) {
+            } else if (geometry_data.at(i_geom).at(j_geom) >= 3, geometry_data.at(i_geom).at(j_geom) <= 7) {
                 // Fixed wall
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
@@ -73,7 +73,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Moving wall
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
                 _moving_wall_cells.push_back(&_cells(i, j));
-            } else (geometry_data.at(i_geom).at(j_geom) == 7) {
+            } else (geometry_data.at(i_geom).at(j_geom) == 9) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
                 _free_slip_cells.push_back(&_cells(i, j));
