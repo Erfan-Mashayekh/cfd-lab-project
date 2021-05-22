@@ -1,19 +1,19 @@
 #--------------------------------------------
 #           geometry file            
 #--------------------------------------------
-geo_file     ChannelWithObstacle.pgm
+geo_file     RayleighBenard.pgm
 
 #--------------------------------------------
 #            size of the domain             
 #--------------------------------------------
-xlength      10
-ylength      2
+xlength      4.0
+ylength      1.0
 
 #--------------------------------------------
 #            number of cells
 #--------------------------------------------
-imax         100
-jmax         20
+imax         40
+jmax         18
 
 #--------------------------------------------
 #               time steps
@@ -22,37 +22,33 @@ jmax         20
 # tau: safety factor for time step size control
 #--------------------------------------------
 dt           0.05
-t_end        30.0
+t_end        10000.0
 tau          0.5
 
 #--------------------------------------------
 #               output
 # dt_value: time interval for writing files
 #--------------------------------------------
-dt_value     0.2
+dt_value     100.0
 
 #--------------------------------------------
 #               pressure
-# itermax: maximum number of pressure iterations
-# eps: tolerance for pressure iteration (residual < eps)
-# omg: relaxation factor for SOR
-# gamma: upwind differencing factor
 #--------------------------------------------
-itermax      500
-eps          0.001
+itermax      100
+eps          0.00001
 omg          1.7
 gamma        0.5
 
 #--------------------------------------------
-#     kinematic viscosity
+#         kinematic viscosity
 #--------------------------------------------
-nu           0.001
+nu           0.0296
 
 #--------------------------------------------
-#        gravity / external forces
+#        gravity
 #--------------------------------------------
 GX           0.0
-GY           0.0
+GY           -9.81
 
 #--------------------------------------------
 #         initial pressure
@@ -62,17 +58,29 @@ PI           0.0
 #--------------------------------------------
 #       initial velocity
 #--------------------------------------------
-UI           1.0
+UI           0.0
 VI           0.0
 
 #--------------------------------------------
-#       inlet velocity
+#          energy
+# TI:     initial temperature
+# beta:   thermal expansion coefficient
+# alpha:  thermal diffusivity (nu/Pr)
 #--------------------------------------------
-UIN          1.0
-VIN          0.0
+energy_eq    on
+TI           293
+beta         0.00179
+alpha        0.00000237
 
 #--------------------------------------------
 #          wall clusterss
 # num_of_walls:     number of walls
+# wall_temp<num>    wall temperature
+# - enter -1 for adiabatic wall
 #--------------------------------------------
-num_of_walls 1
+num_walls    3
+
+wall_temp_3  291.20
+wall_temp_4  294.78
+wall_temp_5  -1  
+

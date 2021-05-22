@@ -272,7 +272,7 @@ void Case::simulate() {
             
           
             // Set pressure Neumann Boundary Conditions
-            _field.set_pressure_bc(_grid);
+            //_field.set_pressure_bc(_grid);
 
             // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
@@ -286,10 +286,10 @@ void Case::simulate() {
             Here we use 100 for our case because it is already converged below that timestep.
             */
 
-            if(it > _max_iter && timestep > 10) {
-                std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
-                break;
-            }
+            //if(it > _max_iter && timestep > 10) {
+            //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+            //    break;
+            //}
         }
 
 
