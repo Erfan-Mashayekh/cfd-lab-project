@@ -386,9 +386,8 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
         int j = cell->j();
 
         std::vector<border_position> border_positions = cell->borders();
-        //std::cout << " ID: " << cell->wall_id() << std::endl;
-        std::cout << " ID: " << cell->wall_id() << " temp: " << _wall_temperature[cell->wall_id()] << std::endl;
-        if (_wall_temperature[cell->wall_id()] = -1) {
+
+        if (_wall_temperature[cell->wall_id()] == -1) {
             // Neumann boundary condition
             if (border_positions.size() == 1) {
                 switch (border_positions.at(0)) {
@@ -434,7 +433,6 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
                 switch (border_positions.at(0)) {
 
                     case border_position::RIGHT:
-                        std::cout << " temp: " << _wall_temperature[cell->wall_id()] << std::endl;
                         field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - field.T(i + 1, j);
                         break;
 

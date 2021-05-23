@@ -148,10 +148,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
         if(_energy_eq){
-                // std::cout << " temp: " << wall_temp[3] << "  "
-                //            << wall_temp[4] << "  "
-                //            << wall_temp[5] << "  "
-                //            << std::endl;
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
