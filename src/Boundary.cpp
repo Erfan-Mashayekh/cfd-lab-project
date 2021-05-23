@@ -386,7 +386,7 @@ void FreeSlipBoundary::apply(Fields &field) {
     }
 }
 
-void Boundary::apply_t(Cell *currentCell, Fields &field, Grid &grid, double gradient = 0) {
+void Boundary::apply_t(Cell *currentCell, Fields &field, Grid &grid) {
     for (auto const &cell : _cells) {
         int i = cell->() i;
         int j = cell->() j;

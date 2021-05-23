@@ -20,40 +20,7 @@ class Boundary {
      */
     virtual void apply(Fields &field) = 0;
     virtual ~Boundary() = default;
-};
-
-/**
- * @brief Boundary condition for the fluid inlet 
- * Dirichlet for velocities specified by inlet_velocity_x and inlet_velocity_y
- */
-class InflowBoundary : public Boundary {
-  public:
-    InflowBoundary(std::vector<Cell *> cells, double inlet_velocity_x, double inlet_velocity_y);
-    InflowBoundary(std::vector<Cell *> cells, double inlet_velocity_x, double inlet_velocity_y,
-                                                                       double inlet_temperature);
-    virtual ~InflowBoundary() = default;
-    virtual void apply(Fields &field);// override;
-
-  private:
-    std::vector<Cell *> _cells;
-    double _inlet_velocity_x;
-    double _inlet_velocity_y;
-    double _inlet_temperature;
-};
-
-/**
- * @brief Boundary condition for the fluid outlet 
- * Neumann boundary condition for velocities 
- */
-class OutflowBoundary : public Boundary {
-  public:
-    OutflowBoundary(std::vector<Cell *> cells);
-
-    virtual ~OutflowBoundary() = default;
-    virtual void apply(Fields &field);// override;
-
-  private:
-    std::vector<Cell *> _cells;
+    void apply_t(Cell* currentCell, Fields &field , Grid &grid);
 };
 
 /**
@@ -65,7 +32,7 @@ class FixedWallBoundary : public Boundary {
     FixedWallBoundary(std::vector<Cell *> cells);
     FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature);
     virtual ~FixedWallBoundary() = default;
-    virtual void apply(Fields &field) override;
+    virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
@@ -79,32 +46,14 @@ class FixedWallBoundary : public Boundary {
  */
 class MovingWallBoundary : public Boundary {
   public:
-    MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity);
+    MovingWallBoundary(std::vector<Cell *> cells, double wall_velocity);
     MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity,
-                                                  std::map<int, double> wall_temperature);
+                       std::map<int, double> wall_temperature);
     virtual ~MovingWallBoundary() = default;
-    virtual void apply(Fields &field) override;
+    virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
     std::map<int, double> _wall_velocity;
     std::map<int, double> _wall_temperature;
 };
-
-/**
- * @brief Free slip boundary 
- * Neumann boundary conditions for velocity
- */
-class FreeSlipBoundary : public Boundary {
-  public:
-    FreeSlipBoundary(std::vector<Cell *> cells);
-    FreeSlipBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature);
-    virtual ~FreeSlipBoundary() = default;
-    virtual void apply(Fields &field);// override;
-
-  private:
-    std::vector<Cell *> _cells;
-    std::map<int, double> _wall_temperature;
-};
-
-
