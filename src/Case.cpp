@@ -50,6 +50,9 @@ Case::Case(std::string file_name, int argn, char **args) {
     double beta;    /* thermal expansion coefficient */
     double alpha;   /* thermal diffusivity */
     int num_walls;  /* number of walls */
+    double iproc;   /* scaling factor for x-direction */ 
+    double jproc;   /* scaling factor for y-direction */
+
     std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
     std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
 
@@ -86,6 +89,8 @@ Case::Case(std::string file_name, int argn, char **args) {
                     if (var == "on") energy_eq = true;
                     else energy_eq = false;
                 }
+                if (var == "iproc") file >> iproc;  
+                if (var == "jproc") file >> jproc;
                 if (var == "TI") file >> TI;
                 if (var == "TIN") file >> TIN;
                 if (var == "beta") file >> beta;
