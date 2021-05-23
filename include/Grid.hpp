@@ -59,11 +59,18 @@ class Grid {
     const std::vector<Cell *> &fluid_cells() const;
 
     /**
-     * @brief Access moving wall cells
+     * @brief Access inflow wall cells
      *
-     * @param[out] vector of moving wall cells
+     * @param[out] vector of inflow wall cells
      */
-    const std::vector<Cell *> &moving_wall_cells() const;
+    const std::vector<Cell *> &inflow_cells() const;
+
+    /**
+     * @brief Access outflow cells
+     *
+     * @param[out] vector of outflow cells
+     */
+    const std::vector<Cell *> &outflow_cells() const;
 
     /**
      * @brief Access fixed wall cells
@@ -72,13 +79,23 @@ class Grid {
      */
     const std::vector<Cell *> &fixed_wall_cells() const;
 
-  private:
-    /**@brief Default lid driven cavity case generator
+    /**
+     * @brief Access moving wall cells
      *
-     * This function creates default lid driven cavity
-     * case without need for a pgm file
+     * @param[out] vector of moving wall cells
      */
-    void build_lid_driven_cavity();
+    const std::vector<Cell *> &moving_wall_cells() const;
+
+    /**
+     * @brief Access free slip wall cells
+     *
+     * @param[out] vector of free slip wall cells
+     */
+    const std::vector<Cell *> &free_slip_cells() const;
+
+
+
+  private:
 
     /// Build cell data structures with given geometrical data
     void assign_cell_types(std::vector<std::vector<int>> &geometry_data);
@@ -86,9 +103,13 @@ class Grid {
     void parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data);
 
     Matrix<Cell> _cells;
+
     std::vector<Cell *> _fluid_cells;
+    std::vector<Cell *> _inflow_cells;
+    std::vector<Cell *> _outflow_cells;
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
+    std::vector<Cell *> _free_slip_cells;
 
     Domain _domain;
 

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <cassert>
+#include <regex>
 
 namespace filesystem = std::filesystem;
 
@@ -23,22 +25,33 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
-    double nu;      /* viscosity   */
+    std::string geo_file; /* geometry file name */
+    double nu;      /* viscosity */
     double UI;      /* velocity x-direction */
     double VI;      /* velocity y-direction */
     double PI;      /* pressure */
     double GX;      /* gravitation x-direction */
     double GY;      /* gravitation y-direction */
-    double xlength; /* length of the domain x-dir.*/
-    double ylength; /* length of the domain y-dir.*/
+    double xlength; /* length of the domain x-dir. */
+    double ylength; /* length of the domain y-dir. */
     double dt;      /* time step */
-    int imax;       /* number of cells x-direction*/
-    int jmax;       /* number of cells y-direction*/
-    double gamma;   /* uppwind differencing factor*/
+    int imax;       /* number of cells x-direction */
+    int jmax;       /* number of cells y-direction */
+    double gamma;   /* uppwind differencing factor */
     double omg;     /* relaxation factor */
-    double tau;     /* safety factor for time step*/
+    double tau;     /* safety factor for time step */
     int itermax;    /* max. number of iterations for pressure per time step */
-    double eps;     /* accuracy bound for pressure*/
+    double eps;     /* accuracy bound for pressure */
+    double UIN;     /* inlet velocity x-direction */
+    double VIN;     /* inlet velocity y-direction */
+    bool energy_eq; /* if energy equation is turned on */
+    double TI;      /* initial temperature */
+    double TIN;     /* inlet temperature */
+    double beta;    /* thermal expansion coefficient */
+    double alpha;   /* thermal diffusivity */
+    int num_walls;  /* number of walls */
+    std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
+    std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
 
     if (file.is_open()) {
 
@@ -48,6 +61,7 @@ Case::Case(std::string file_name, int argn, char **args) {
             if (var[0] == '#') { /* ignore comment line*/
                 file.ignore(MAX_LINE_LENGTH, '\n');
             } else {
+                if (var == "geo_file") file >> _geom_name;
                 if (var == "xlength") file >> xlength;
                 if (var == "ylength") file >> ylength;
                 if (var == "nu") file >> nu;
@@ -66,15 +80,37 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "itermax") file >> itermax;
                 if (var == "imax") file >> imax;
                 if (var == "jmax") file >> jmax;
+                if (var == "UIN") file >> UIN;
+                if (var == "VIN") file >> VIN;
+                if (var == "energy_eq"){
+                    if (var == "on") energy_eq = true;
+                    else energy_eq = false;
+                }
+                if (var == "TI") file >> TI;
+                if (var == "TIN") file >> TIN;
+                if (var == "beta") file >> beta;
+                if (var == "alpha") file >> alpha;
+                if (var == "num_walls") file >> num_walls;
+
+                std::string str_vel = "wall_vel";
+                std::string str_temp = "wall_temp";
+                std::regex match_idx("[0-9][0-9]*");
+                std::smatch idx;
+                double value;
+                std::regex_search(var, idx, match_idx);
+
+                if (std::search(var.begin(), var.end(), str_vel.begin(), str_vel.end()) != var.end()){
+                    file >> value;
+                    wall_vel.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
+                }
+                if (std::search(var.begin(), var.end(), str_temp.begin(), str_temp.end()) != var.end()){
+                    file >> value;
+                    wall_temp.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
+                }
             }
         }
     }
     file.close();
-
-    std::map<int, double> wall_vel;
-    if (_geom_name.compare("NONE") == 0) {
-        wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
-    }
 
     // Set file names for geometry file and output directory
     set_file_names(file_name);
@@ -97,12 +133,41 @@ Case::Case(std::string file_name, int argn, char **args) {
     _tolerance = eps;
 
     // Construct boundaries
-    if (not _grid.moving_wall_cells().empty()) {
-        _boundaries.push_back(
-            std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
+    // Inflow
+    if (not _grid.inflow_cells().empty()) {
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
+        } else {
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
+        }
     }
+    // Outflow
+    if (not _grid.outflow_cells().empty()) {
+        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
+    }
+    // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        }
+    }
+    // Moving wall
+    if (not _grid.moving_wall_cells().empty()) {
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
+        }
+    }
+    // Free slip
+    if (not _grid.free_slip_cells().empty()) {
+        if(energy_eq){
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
+        } 
     }
 }
 
@@ -174,22 +239,19 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
-    // Running message
-    std::cout << "Fluidchen is running and will print vtk output every 100 timestep !" << std::endl;
+    assert(_output_freq > 0); //
+    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
 
     // initialization
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-
+    double step = 0;
     // time loop
-    while (t <= _t_end) {
+    while (t < _t_end) {
 
-        // calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid);
-
-        // applying velocity boundary condition for every 4 sides of the wall boundary
+        // Applying velocity boundary condition for every 4 sides of the wall boundary
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
@@ -197,61 +259,68 @@ void Case::simulate() {
         // calculate Fn and Gn
         _field.calculate_fluxes(_grid);
 
-        // calculate right hand side rhs of the pressure eq
+        // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
         // SOR Loop
         // Initialization of residual and iteration counter
         int it = 0;
-        double res = _tolerance + 1.0;
-
-        // SOR loop begin
-        while (it <= _max_iter && res > _tolerance) {
-
-            // Applying pressure boundary condition for every 4 sides of the wall boundary
-
-            // Bottom & top
-            for (int i = 1; i <= _grid.imax(); i++) {
-                _field.p(i, 0) = _field.p(i, 1);
-                _field.p(i, _grid.jmax() + 1) = _field.p(i, _grid.jmax());
-            }
-
-            // Left & right
-            for (int j = 1; j <= _grid.jmax(); j++) {
-                _field.p(0, j) = _field.p(1, j);
-                _field.p(_grid.imax() + 1, j) = _field.p(_grid.imax(), j);
-            }
+        // Set initial tolerance
+        double res = _tolerance + 1.0;        
+        
+        while (res > _tolerance){
+            
+          
+            // Set pressure Neumann Boundary Conditions
+            //_field.set_pressure_bc(_grid);
 
             // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
 
             // Increment the iteration counter
             it++;
+
+            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
+            /*
+            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
+            Here we use 100 for our case because it is already converged below that timestep.
+            */
+
+            //if(it > _max_iter && timestep > 10) {
+            //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+            //    break;
+            //}
         }
+
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
 
         // Calculate new time
         t = t + dt;
-        // cout << "t = " << t << endl;
 
         // Increment the time step counter
         timestep++;
 
-        // Output the vtk every 100 timestep just for the sake of animation
-        if (timestep % 100 == 0) {
-            std::cout << "Printing vtk file at t = " << t << std::endl;
-            ;
-            output_vtk(timestep, t);
+        // Calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid);
+
+
+        // Output the vtk every 1s
+        if (t >= step + _output_freq) {
+            step = step + _output_freq;
+            std::cout << "Printing vtk file at t = " << step << std::endl;
+            output_vtk(step, 0);
         }
+     
     }
 
     // Output the final VTK file
-    output_vtk(timestep, _t_end);
+    output_vtk(step, 0);
 
     // End message
-    std::cout << "Done !!";
+    std::cout << "Done!\n";
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

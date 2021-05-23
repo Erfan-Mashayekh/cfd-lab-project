@@ -24,7 +24,7 @@ cd GroupX_CFDLab
 mkdir build && cd build
 cmake ..
 make
-make install # optional, check prefix
+make install # optional
 ```
 
 These commands will create the executable `fluidchen` and copy it to the default directory `/usr/local/bin` . If you want to install to a custom path, execute the cmake command as
@@ -61,7 +61,7 @@ fluidchen /path/to/fluidchen/example_cases/LidDrivenCavity/LidDrivenCavity.dat
 
 This will run the case file and create the output folder `/path/to/case/case_name_Output` which holds the `.vtk` files of the solution. The output folder is created in the same location as your case file. Note that this may require write permissions in the given directory.
 
-If input file does not contain a geometry file, fluidchen will run lid-driven cavity case with given parameters.
+It is essential to provide a geometry file. If input file does not contain a geometry file it will issue an error and would exit. Even for the default LidDrivenCavity example, a geometry file has been added. 
 
 ### GCC version
 
