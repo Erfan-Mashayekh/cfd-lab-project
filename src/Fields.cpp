@@ -16,7 +16,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 
-}bool
+}
 
 // Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid, bool energy_eq){

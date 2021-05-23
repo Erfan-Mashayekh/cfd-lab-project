@@ -120,8 +120,6 @@ class Fields {
     Matrix<double> _G;
     /// right hand side matrix
     Matrix<double> _RS;
-    /// temperature matrix
-    Matrix<double> _T;
 
     /// kinematic viscosity
     double _nu;
