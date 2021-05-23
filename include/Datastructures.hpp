@@ -60,6 +60,15 @@ template <typename T> class Matrix {
     const T *data() const { return _container.data(); }
 
     /**
+     * @brief Pointer representation of underlying data
+     *
+     * @param[out] pointer to the beginning of the vector
+     */
+    void copy( Matrix * M){
+        std::copy(M->data().begin(), M->data().end(), std::back_inserter(_container));
+    }
+
+    /**
      * @brief Access of the size of the structure
      *
      * @param[out] size of the data structure

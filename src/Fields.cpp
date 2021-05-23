@@ -5,8 +5,8 @@
 #include <vector>
 #include <cmath>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, double alpha, double beta)
-    : _nu(nu), _dt(dt), _tau(tau), _alpha(alpha), _beta(beta) {
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, double alpha, double beta, double GX, double GY)
+    : _nu(nu), _dt(dt), _tau(tau), _alpha(alpha), _beta(beta), _GX(GX), _GY(GY)  {
     _U = Matrix<double>(imax + 2, jmax + 2, UI);
     _V = Matrix<double>(imax + 2, jmax + 2, VI);
     _P = Matrix<double>(imax + 2, jmax + 2, PI);
@@ -27,14 +27,14 @@ void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
             for (int i = 1; i < grid.imax(); i++) {
                 _F(i, j) = _U(i, j) +
                            _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) - 
-                           _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0);
+                           _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
             }
         }
         for (int j = 1; j < grid.jmax(); j++) {
             for (int i = 1; i < grid.imax() + 1; i++) {
                 _G(i, j) = _V(i, j) +
                            _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j)) - 
-                           _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1);
+                           _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1) * _GY;
             }
         }        
     
@@ -93,16 +93,36 @@ void Fields::calculate_velocities(Grid &grid) {
 
 // Calculate the velocities at the next time step
 void Fields::calculate_temperature(Grid &grid) {
-    
-    Matrix<double> T_old;
+
+    Matrix<double> T_new = Matrix<double>(grid.imax() + 2, grid.jmax() + 2, 0);
 
     for (int i = 1; i < grid.imax() + 1; i++) {
         for (int j = 1; j < grid.jmax() + 1 ; j++) {
             // T (Eq 34)
-            T_old(i, j) = _T(i, j) + 
+            T_new(i, j) = _T(i, j) + 
                           _dt * (_alpha * Discretization::diffusion(_T, i, j) - Discretization::convection_T(_T, _U, _V, i, j));
         }
     }
+
+    for (int i = 1; i < grid.imax() + 1; i++) {
+        for (int j = 1; j < grid.jmax() + 1 ; j++) {
+            _T(i, j) = T_new(i, j);
+        }
+    }
+    // _T.copy(&T_new);
+    
+    // for (int i = 1; i < 10; i++) {
+    //     for (int j = 1; j < 10 ; j++) {
+    //         std::cout << T_new(i, j) << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+    // for (int i = 1; i < 10; i++) {
+    //     for (int j = 1; j < 10 ; j++) {
+    //         std::cout << _T(i, j) << " ";
+    //     }
+    //     std::cout << "\n";
+    // }    
 }
 
 // calculate dt for adaptive time stepping

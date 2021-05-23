@@ -124,7 +124,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, GX, GY);
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -144,9 +144,14 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
+
     // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
         if(_energy_eq){
+                // std::cout << " temp: " << wall_temp[3] << "  "
+                //            << wall_temp[4] << "  "
+                //            << wall_temp[5] << "  "
+                //            << std::endl;
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
@@ -250,14 +255,17 @@ void Case::simulate() {
     // time loop
     while (t < _t_end) {
 
-        // Applying velocity boundary condition for every 4 sides of the wall boundary
+        // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
         // Calculate Temperature if the energy equation is on
         if(_energy_eq){
-            // _field.calculate_temperature(_grid);
+            for (auto &boundary : _boundaries) {
+                boundary->apply_temperature(_field);
+            }
+            _field.calculate_temperature(_grid);
         }
 
         // Calculate Fn and Gn
@@ -368,11 +376,20 @@ void Case::output_vtk(int timestep, int my_rank) {
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
 
+     // Temperature Array
+    vtkDoubleArray *Temperature = vtkDoubleArray::New();
+    Temperature->SetName("temperature");
+    Temperature->SetNumberOfComponents(1);
+
+
+
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
             double pressure = _field.p(i, j);
+            double temperature = _field.T(i, j);
             Pressure->InsertNextTuple(&pressure);
+            Temperature->InsertNextTuple(&temperature);
         }
     }
 
@@ -389,6 +406,10 @@ void Case::output_vtk(int timestep, int my_rank) {
         }
     }
 
+    // Add Temperature to Structured Grid
+    structuredGrid->GetCellData()->AddArray(Temperature);
+
+
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);
 
@@ -400,11 +421,12 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
     writer->Write();
+
 }
 
 void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {

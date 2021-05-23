@@ -54,8 +54,6 @@ void InflowBoundary::apply(Fields &field){
 
         field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
 
-        // TODO: Set inlet temperature
-
     }
 }
 
@@ -274,7 +272,226 @@ void MovingWallBoundary::apply(Fields &field) {
     }
 }
 
-
 void FreeSlipBoundary::apply(Fields &field) {
-    // Implement
+
+    for (auto const &cell : _cells) {
+
+        int i = cell->i();
+        int j = cell->j();
+
+        std::vector<border_position> border_positions = cell->borders();
+
+        // Set velocity to zero at inner obstacle cells
+        // Need help here guys
+        if (border_positions.size() == 0) {
+
+            // u
+            field.u(cell->i(), cell->j()) = 0.0;
+            // v
+            field.v(cell->i(), cell->j()) = 0.0;
+            // F
+            field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+            // G
+            field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+            // p
+            field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->i() + 1);
+
+            continue;
+        }
+
+        // Set boudndary conditions when there is only one boundary cell
+        else if (border_positions.size() == 1) {
+
+            switch (border_positions.at(0)) {
+
+            case border_position::RIGHT:
+                field.v(i, j) = field.v(i + 1, j);
+                field.u(i, j) = 0;
+                field.f(i, j) = field.u(i, j);
+                field.p(i, j) = field.p(i + 1, j);
+                break;
+
+            case border_position::LEFT:
+                field.v(i, j) = field.v(i + 1, j);
+                field.u(i - 1, j) = 0;
+                field.f(i - 1, j) = field.u(i - 1, j);
+                field.p(i, j) = field.p(i + 1, j);
+                break;
+
+            case border_position::TOP:
+                field.u(i, j) = field.u(i, j + 1);
+                field.v(i, j) = 0;
+                field.g(i, j) = field.v(i, j);
+                field.p(i, j) = field.p(i, j + 1);
+                break;
+
+            case border_position::BOTTOM:
+                field.u(i, j) = field.u(i, j - 1);
+                field.v(i, j - 1) = 0;
+                field.g(i, j - 1) = field.v(i, j - 1);
+                field.p(i, j) = field.p(i, j - 1);
+                break;
+            }
+        }
+
+        // Set boudndary conditions when there are two fluid boundary cells
+        else if (border_positions.size() == 2) {
+
+            if (cell->is_border(border_position::TOP) && cell->is_border(border_position::RIGHT)) {
+                field.u(i, j) = 0;
+                field.v(i, j) = 0;
+                field.f(i, j) = field.u(i, j);
+                field.g(i, j) = field.v(i, j);
+                field.p(i,j) = (field.p(i,j+1)*field.p(i+1,j))*0.5;
+
+            } else if (cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)) {
+                field.u(i, j) = 0;
+                field.v(i, j) = 0;
+                field.f(i, j) = field.u(i, j);
+                field.g(i, j) = field.v(i, j);
+                field.p(i,j) = (field.p(i,j+1)*field.p(i-1,j))*0.5;
+
+            } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)) {
+                field.u(i, j) = 0;
+                field.v(i, j) = 0;
+                field.f(i, j) = field.u(i, j);
+                field.g(i, j) = field.v(i, j);
+                field.p(i,j) = (field.p(i,j-1)*field.p(i+1,j))*0.5;
+
+            } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)) {
+                field.u(i, j) = 0;
+                field.v(i, j) = 0;
+                field.f(i, j) = field.u(i, j);
+                field.g(i, j) = field.v(i, j);
+                field.p(i,j) = (field.p(i,j-1)*field.p(i-1,j))*0.5;
+
+            }
+
+            else {
+                // <TOP, BOTTOM> or <LEFT, RIGHT> configurations are not allowed!
+                std::cout << "Warning! Forbidden cells found!" << std::endl;
+            }
+        }
+
+        else {
+            // More than 2 border cells are not allowed
+            std::cout << "Warning! Forbidden cells found!" << std::endl;
+        }
+    }
 }
+
+void FixedWallBoundary::apply_temperature(Fields &field) {
+    for (auto const &cell : _cells) {
+        int i = cell->i();
+        int j = cell->j();
+
+        std::vector<border_position> border_positions = cell->borders();
+        //std::cout << " ID: " << cell->wall_id() << std::endl;
+        std::cout << " ID: " << cell->wall_id() << " temp: " << _wall_temperature[cell->wall_id()] << std::endl;
+        if (_wall_temperature[cell->wall_id()] = -1) {
+            // Neumann boundary condition
+            if (border_positions.size() == 1) {
+                switch (border_positions.at(0)) {
+                    case border_position::RIGHT:
+                        field.T(i, j) = field.T(i + 1, j);
+                        break;
+
+                    case border_position::LEFT:
+                        field.T(i, j) = field.T(i - 1, j);
+                        break;
+
+                    case border_position::TOP:
+                        field.T(i, j) = field.T(i, j + 1);
+                        break;
+
+                    case border_position::BOTTOM:
+                        field.T(i, j) = field.T(i, j - 1);
+                        break;
+                }
+            } else if (border_positions.size() == 2) {
+
+                if (cell->is_border(border_position::TOP) && cell->is_border(border_position::RIGHT)) {
+                    // NorthEast
+                    field.T(i, j) = 0.5 * (field.T(i, j + 1) + field.T(i + 1, j));
+
+                } else if (cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)) {
+                    // Northwest
+                    field.T(i, j) = 0.5 * (field.T(i, j + 1) + field.T(i - 1, j));
+
+                } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)) {
+                    // Southeast
+                    field.T(i, j) = 0.5 * (field.T(i, j - 1) + field.T(i + 1, j));
+
+                } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)) {
+                    // Southwest
+                    field.T(i, j) = 0.5 * (field.T(i, j - 1) + field.T(i - 1, j));
+                }
+            }
+        }
+        else {
+            // Dirichlet Boundary Condition
+            if (border_positions.size() == 1) {
+                switch (border_positions.at(0)) {
+
+                    case border_position::RIGHT:
+                        std::cout << " temp: " << _wall_temperature[cell->wall_id()] << std::endl;
+                        field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - field.T(i + 1, j);
+                        break;
+
+                    case border_position::LEFT:
+                        field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - field.T(i - 1, j);
+                        break;
+
+                    case border_position::TOP:
+                        field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - field.T(i, j + 1);
+                        break;
+
+                    case border_position::BOTTOM:
+                        field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - field.T(i, j - 1);
+                        break;
+                }
+            } else if (border_positions.size() == 2) {
+
+                if (cell->is_border(border_position::TOP) && cell->is_border(border_position::RIGHT)) {
+                    // NorthEast
+                    field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i + 1, j) + field.T(i, j + 1));
+
+                } else if (cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)) {
+                    // Northwest
+                    field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i - 1, j) + field.T(i, j + 1));
+
+                } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)) {
+                    // Southeast
+                    field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i + 1, j) + field.T(i, j - 1));
+                } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)) {
+                    // Southwest
+                    field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i - 1, j) + field.T(i, j - 1));
+                }
+            }
+        }
+    }
+}
+
+void InflowBoundary::apply_temperature(Fields &field){
+
+    for (auto const& cell: _cells) {
+        // Set T    
+        field.T(cell->i(), cell->j()) =_inlet_temperature;
+    }
+}
+
+void OutflowBoundary::apply_temperature(Fields &field){
+
+    for (auto const& cell : _cells) {
+
+        // Assume single fluid cell neighbour
+        std::vector<border_position> border_pos = cell->borders();
+
+        // Set T
+        field.T(cell->i(), cell->j()) = field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
+    }
+}
+
+void FreeSlipBoundary::apply_temperature(Fields &field) {}
+
+void MovingWallBoundary::apply_temperature(Fields &field) {}
