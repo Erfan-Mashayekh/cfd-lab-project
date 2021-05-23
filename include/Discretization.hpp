@@ -65,6 +65,18 @@ class Discretization {
     static double laplacian(const Matrix<double> &P, int i, int j);
 
     /**
+     * @brief Convection in y direction using donor-cell scheme
+     *
+     * @param[in] x-velocity field
+     * @param[in] y-velocity field
+     * @param[in] x index
+     * @param[in] y index
+     * @param[out] result
+     *
+     */
+    static double convection_T(const Matrix<double> &T, const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+
+    /**
      * @brief Terms of laplacian needed for SOR, i.e. excluding unknown value at
      * (i,j)
      *

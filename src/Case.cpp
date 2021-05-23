@@ -43,7 +43,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     int itermax;    /* max. number of iterations for pressure per time step */
     double eps;     /* accuracy bound for pressure */
     double UIN;     /* inlet velocity x-direction */
-    double VIN;     /* inlet velocity y-direction */
+    double VIN;     /* inlet velocity y-direction */        
     bool energy_eq; /* if energy equation is turned on */
     double TI;      /* initial temperature */
     double TIN;     /* inlet temperature */
@@ -111,7 +111,7 @@ Case::Case(std::string file_name, int argn, char **args) {
         }
     }
     file.close();
-
+    std::cout << "TI" << TI << "   energy : " << energy_eq << std::endl;
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
@@ -125,7 +125,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, energy_eq);
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -256,8 +256,13 @@ void Case::simulate() {
             boundary->apply(_field);
         }
 
-        // calculate Fn and Gn
-        _field.calculate_fluxes(_grid);
+        // Calculate Temperature if the energy equation is on
+        if(energy_eq){
+            _field.calculate_temperature(_grid);
+        }
+
+        // Calculate Fn and Gn
+        // _field.calculate_fluxes(_grid, energy_eq);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);

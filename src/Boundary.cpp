@@ -100,6 +100,8 @@ void FixedWallBoundary::apply(Fields &field){
             field.g(cell->i(), cell->j()) = 0.0;
             // p
             field.p(cell->i(), cell->j()) = 0.0;
+            // T
+            field.T(cell->i(), cell->j()) = 0.0;
 
             continue;
         }
@@ -114,6 +116,9 @@ void FixedWallBoundary::apply(Fields &field){
                 field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
                 // p
                 field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos)->i(), cell->j());
+                // T
+                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
+                //           << _wall_temperature[cell->wall_id()] << std::endl;
             }
             if(cell->is_border(border_position::LEFT)){             
                 // u 
@@ -124,6 +129,9 @@ void FixedWallBoundary::apply(Fields &field){
                 field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
                 // p
                 field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos)->i(), cell->j());
+
+                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
+                //           << _wall_temperature[cell->wall_id()] << std::endl;
             }
             if(cell->is_border(border_position::TOP)){              
                 // u 
@@ -134,6 +142,9 @@ void FixedWallBoundary::apply(Fields &field){
                 field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
                 // p
                 field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_pos)->j());
+
+                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
+                //           << _wall_temperature[cell->wall_id()] << std::endl;                
             }
             if(cell->is_border(border_position::BOTTOM)){
                 // u 
@@ -144,6 +155,9 @@ void FixedWallBoundary::apply(Fields &field){
                 field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
                 // p
                 field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_pos)->j());
+
+                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
+                //           << _wall_temperature[cell->wall_id()] << std::endl;                
             }
         }
     }
@@ -204,7 +218,6 @@ void FixedWallBoundary::apply(Fields &field){
                 field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
                 // p
                 field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(border_pos)->i(), cell->neighbour(border_pos)->j());
-                // std::cout << field.p(cell->i(), cell->j()) << "  " << std::endl;
             }
             if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)){               
                 // u 
