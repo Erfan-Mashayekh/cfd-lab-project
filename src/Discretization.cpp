@@ -28,6 +28,14 @@ double Discretization::convection_v(const Matrix<double> &U, const Matrix<double
     return result;     
 }
 
+double Discretization::convection_T(const Matrix<double> &T, const Matrix<double> &U, const Matrix<double> &V, int i, int j) {
+    double result = ( U(i, j) * interpolate(T, i, j, 1, 0) - U(i - 1, j) * interpolate(T, i - 1, j, 1, 0) ) / _dx +
+                    ( abs(U(i, j)) * (T(i, j) - T(i + 1, j)) / 2.0 - abs(U(i - 1, j)) * (T(i - 1, j) - T(i, j)) / 2.0 ) / _dx * _gamma +
+                    ( V(i, j) * interpolate(T, i, j, 0, 1) - V(i, j - 1) * interpolate(T, i, j - 1, 0, 1) ) / _dy +
+                    ( abs(V(i, j)) * (T(i, j) - T(i, j + 1)) / 2.0 - abs(V(i, j - 1)) * (T(i, j - 1) - T(i, j)) / 2.0 ) / _dy * _gamma;
+    return result;                
+}
+
 double Discretization::diffusion(const Matrix<double> &A, int i, int j) {
     double result = (A(i + 1, j) - 2.0 * A(i, j) + A(i - 1, j)) / (_dx * _dx) +
                     (A(i, j + 1) - 2.0 * A(i, j) + A(i, j - 1)) / (_dy * _dy);
