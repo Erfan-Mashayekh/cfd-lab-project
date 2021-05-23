@@ -25,7 +25,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
-    std::string geo_file; /* geometry file name */
     double nu;      /* viscosity */
     double UI;      /* velocity x-direction */
     double VI;      /* velocity y-direction */
@@ -43,8 +42,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     int itermax;    /* max. number of iterations for pressure per time step */
     double eps;     /* accuracy bound for pressure */
     double UIN;     /* inlet velocity x-direction */
-    double VIN;     /* inlet velocity y-direction */        
-    bool energy_eq; /* if energy equation is turned on */
+    double VIN;     /* inlet velocity y-direction */
     double TI;      /* initial temperature */
     double TIN;     /* inlet temperature */
     double beta;    /* thermal expansion coefficient */
@@ -83,8 +81,10 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "UIN") file >> UIN;
                 if (var == "VIN") file >> VIN;
                 if (var == "energy_eq"){
-                    if (var == "on") energy_eq = true;
-                    else energy_eq = false;
+                    std::string state;
+                    file >> state;
+                    if (state == "on") _energy_eq = true;
+                    else _energy_eq = false;
                 }
                 if (var == "TI") file >> TI;
                 if (var == "TIN") file >> TIN;
@@ -111,7 +111,6 @@ Case::Case(std::string file_name, int argn, char **args) {
         }
     }
     file.close();
-    std::cout << "TI" << TI << "   energy : " << energy_eq << std::endl;
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
@@ -125,7 +124,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, energy_eq);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta);
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -135,7 +134,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Construct boundaries
     // Inflow
     if (not _grid.inflow_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
         } else {
             _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
@@ -147,7 +146,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
@@ -155,7 +154,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Moving wall
     if (not _grid.moving_wall_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
@@ -163,7 +162,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Free slip
     if (not _grid.free_slip_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
@@ -257,12 +256,12 @@ void Case::simulate() {
         }
 
         // Calculate Temperature if the energy equation is on
-        if(energy_eq){
-            _field.calculate_temperature(_grid);
+        if(_energy_eq){
+            // _field.calculate_temperature(_grid);
         }
 
         // Calculate Fn and Gn
-        // _field.calculate_fluxes(_grid, energy_eq);
+        _field.calculate_fluxes(_grid, _energy_eq);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
@@ -276,7 +275,7 @@ void Case::simulate() {
         while (res > _tolerance){
             
           
-            // Set pressure Neumann Boundary Conditions
+            // TODO: Set pressure Neumann Boundary Conditions
             //_field.set_pressure_bc(_grid);
 
             // Perform SOR Solver and retrieve esidual for the loop continuity

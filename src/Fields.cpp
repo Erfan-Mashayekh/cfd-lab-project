@@ -5,7 +5,7 @@
 #include <vector>
 #include <cmath>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, double alpha, double beta, bool energy_eq)
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, double alpha, double beta)
     : _nu(nu), _dt(dt), _tau(tau), _alpha(alpha), _beta(beta) {
     _U = Matrix<double>(imax + 2, jmax + 2, UI);
     _V = Matrix<double>(imax + 2, jmax + 2, VI);
@@ -20,7 +20,9 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 // Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
+
     if(energy_eq){
+
         for (int j = 1; j < grid.jmax() + 1; j++) {
             for (int i = 1; i < grid.imax(); i++) {
                 _F(i, j) = _U(i, j) +
@@ -35,17 +37,19 @@ void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
                            _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1);
             }
         }        
-    }else{
+    
+    } else {
+
         for (int j = 1; j < grid.jmax() + 1; j++) {
             for (int i = 1; i < grid.imax(); i++) {
                 _F(i, j) = _U(i, j) +
-                           _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
+                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
             }
         }
         for (int j = 1; j < grid.jmax(); j++) {
             for (int i = 1; i < grid.imax() + 1; i++) {
                 _G(i, j) = _V(i, j) +
-                           _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
+                       _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
             }
         }
     }
@@ -133,25 +137,10 @@ double Fields::calculate_dt(Grid &grid) {
     return _dt;
 }
 
-void Fields::set_pressure_bc(Grid &grid){
-
-    // Bottom and top wall
-    for (int i = 1; i < grid.imax() + 1; i++) {
-         _P(i, 0) = _P(i, 1);
-         _P(i, grid.jmax() + 1) = _P(i, grid.jmax());
-    }
-
-    // Left and right wall
-    for (int j = 1; j < grid.jmax() + 1; j++) {
-         _P(0, j) = _P(1, j);
-         _P(grid.imax() + 1, j) = _P(grid.imax(), j);
-    }  
-}
-
-double &Fields::p(int i, int j) { return _P(i, j); }
-double &Fields::T(int i, int j) { return _T(i, j); }
 double &Fields::u(int i, int j) { return _U(i, j); }
 double &Fields::v(int i, int j) { return _V(i, j); }
+double &Fields::p(int i, int j) { return _P(i, j); }
+double &Fields::T(int i, int j) { return _T(i, j); }
 double &Fields::f(int i, int j) { return _F(i, j); }
 double &Fields::g(int i, int j) { return _G(i, j); }
 double &Fields::rs(int i, int j) { return _RS(i, j); }

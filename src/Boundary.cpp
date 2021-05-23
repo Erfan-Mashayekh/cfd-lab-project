@@ -88,7 +88,7 @@ void FixedWallBoundary::apply(Fields &field){
         
         std::vector<border_position> border_positions = cell->borders();
 
-        // Set velocity to zero at inner obstacle cells
+        // Set boundary conditions to zero if there are no bordering fluid cells (at inner obstacle cells)
         if(border_positions.size() == 0){
             // u 
             field.u(cell->i(), cell->j()) = 0.0;
@@ -106,132 +106,144 @@ void FixedWallBoundary::apply(Fields &field){
             continue;
         }
 
-        for(auto const& border_pos: border_positions){
-            if(cell->is_border(border_position::RIGHT)){              
-                // u 
-                field.u(cell->i(), cell->j()) = 0.0;
-                // v 
-                field.v(cell->i(), cell->j()) = - field.v(cell->neighbour(border_pos)->i(), cell->j());
-                // F 
-                field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
-                // p
-                field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos)->i(), cell->j());
-                // T
-                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
-                //           << _wall_temperature[cell->wall_id()] << std::endl;
-            }
-            if(cell->is_border(border_position::LEFT)){             
-                // u 
-                field.u(cell->i()-1, cell->j()) = 0.0;
-                // v 
-                field.v(cell->i(), cell->j()) = - field.v(cell->neighbour(border_pos)->i(), cell->j());
-                // F 
-                field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
-                // p
-                field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos)->i(), cell->j());
+        // Set boudndary conditions when there is only one boundary cell
+        else if(border_positions.size() == 1){
 
-                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
-                //           << _wall_temperature[cell->wall_id()] << std::endl;
-            }
-            if(cell->is_border(border_position::TOP)){              
-                // u 
-                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->neighbour(border_pos)->j());
-                // v 
-                field.v(cell->i(), cell->j()) = 0.0;
-                // G
-                field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
-                // p
-                field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_pos)->j());
+            switch(border_positions.at(0)){
 
-                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
-                //           << _wall_temperature[cell->wall_id()] << std::endl;                
-            }
-            if(cell->is_border(border_position::BOTTOM)){
-                // u 
-                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->neighbour(border_pos)->j());
-                // v 
-                field.v(cell->i(), cell->j()-1) = 0.0;    
-                // G
-                field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
-                // p
-                field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_pos)->j());
+                case border_position::RIGHT:             
+                    // u 
+                    field.u(cell->i(), cell->j()) = 0.0;
+                    // v 
+                    field.v(cell->i(), cell->j()) = - field.v(cell->neighbour(border_position::RIGHT)->i(), cell->j());
+                    // F 
+                    field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+                    // p
+                    field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_position::RIGHT)->i(), cell->j());
 
-                // std::cout << "id : " <<cell->wall_id() << "  temperature : "
-                //           << _wall_temperature[cell->wall_id()] << std::endl;                
+                    break;
+
+                case border_position::LEFT:           
+                    // u - Take the staggered grid position into consideration
+                    field.u(cell->i()-1, cell->j()) = 0.0;
+                    // v 
+                    field.v(cell->i(), cell->j()) = - field.v(cell->neighbour(border_position::LEFT)->i(), cell->j());
+                    // F - Take the staggered grid position into consideration 
+                    field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
+                    // p
+                    field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_position::LEFT)->i(), cell->j());
+
+                    break;
+
+                case border_position::TOP:       
+                    // u 
+                    field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->neighbour(border_position::TOP)->j());
+                    // v 
+                    field.v(cell->i(), cell->j()) = 0.0;
+                    // G
+                    field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+                    // p
+                    field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_position::TOP)->j());
+
+                    break;
+
+                case border_position::BOTTOM:
+                    // u 
+                    field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->neighbour(border_position::BOTTOM)->j());
+                    // v - Take the staggered grid position into consideration 
+                    field.v(cell->i(), cell->j()-1) = 0.0;    
+                    // G - Take the staggered grid position into consideration
+                    field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
+                    // p
+                    field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_position::BOTTOM)->j());
+
+                    break;
             }
         }
-    }
 
-    for(auto const& cell: _cells){
-        
-        std::vector<border_position> border_positions = cell->borders();
-        
-        for(auto const& border_pos: border_positions){
-            if(cell->is_border(border_position::TOP) && cell->is_border(border_position::RIGHT))
-                field.p(cell->i(), cell->j()) = 0.0;
-            if(cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT))
-                field.p(cell->i(), cell->j()) = 0.0;
-            if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT))
-                field.p(cell->i(), cell->j()) = 0.0;
-            if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT))
-                field.p(cell->i(), cell->j()) = 0.0;                                                
-        }
-    }
-    
-    for(auto const& cell: _cells){
-        
-        std::vector<border_position> border_positions = cell->borders();
-        
-        for(auto const& border_pos: border_positions){
+        // Set boudndary conditions when there are two fluid boundary cells
+        else if(border_positions.size() == 2){
+
             if(cell->is_border(border_position::TOP) && cell->is_border(border_position::RIGHT)){ 
                 // u 
                 field.u(cell->i(), cell->j()) = 0.0;
                 // v 
                 field.v(cell->i(), cell->j()) = 0.0;
+                // u
+                field.u(cell->i()-1, cell->j()) = - field.u(cell->i()-1, cell->j()+1);
+                // v 
+                field.v(cell->i(), cell->j()-1) = - field.v(cell->i()+1, cell->j()-1);
                 // F 
                 field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
                 // G
                 field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
                 // p
-                field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(border_pos)->i(), cell->neighbour(border_pos)->j());
+                field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::TOP)->i(), cell->neighbour(border_position::TOP)->j())
+                                                      + field.p(cell->neighbour(border_position::RIGHT)->i(), cell->neighbour(border_position::RIGHT)->j()) );
             }
-            if(cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)){                              
-                // u 
+            else if(cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)){                              
+                // u
                 field.u(cell->i()-1, cell->j()) = 0.0;
-                // v 
+                // v
                 field.v(cell->i(), cell->j()) = 0.0;
+                // u
+                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j()+1);
+                // v 
+                field.v(cell->i(), cell->j()-1) = - field.v(cell->i()-1, cell->j()-1);
                 // F 
                 field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
                 // G
                 field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
                 // p
-                field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(border_pos)->i(), cell->neighbour(border_pos)->j());
+                field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::TOP)->i(), cell->neighbour(border_position::TOP)->j())
+                                                      + field.p(cell->neighbour(border_position::LEFT)->i(), cell->neighbour(border_position::LEFT)->j()) );
             }
-            if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)){               
+            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)){               
                 // u 
                 field.u(cell->i(), cell->j()) = 0.0;
                 // v 
                 field.v(cell->i(), cell->j()-1) = 0.0;
+                // u
+                field.u(cell->i()-1, cell->j()) = - field.u(cell->i()-1, cell->j()-1);
+                // v 
+                field.v(cell->i(), cell->j()) = - field.v(cell->i()+1, cell->j());
                 // F 
                 field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
                 // G
                 field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
                 // p
-                field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(border_pos)->i(), cell->neighbour(border_pos)->j());
+                field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::BOTTOM)->i(), cell->neighbour(border_position::BOTTOM)->j())
+                                                      + field.p(cell->neighbour(border_position::RIGHT)->i(), cell->neighbour(border_position::RIGHT)->j()) );
             }
-            if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)){               
+            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)){               
                 // u 
                 field.u(cell->i()-1, cell->j()) = 0.0;
                 // v 
                 field.v(cell->i(), cell->j()-1) = 0.0;
+                // u
+                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j()-1);
+                // v 
+                field.v(cell->i(), cell->j()) = - field.v(cell->i()-1, cell->j());
                 // F 
                 field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
                 // G
                 field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
                 // p
-                field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(border_pos)->i(), cell->neighbour(border_pos)->j());
-            }            
+                field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::BOTTOM)->i(), cell->neighbour(border_position::BOTTOM)->j())
+                                                      + field.p(cell->neighbour(border_position::LEFT)->i(), cell->neighbour(border_position::LEFT)->j()) );
+            }
+
+            else{
+                // <TOP, BOTTOM> or <LEFT, RIGHT> configurations are not allowed!
+                std::cout << "Warning! Forbidden cells found!" << std::endl;
+            }         
         }
+
+        else{
+            // More than 2 border cells are not allowed
+            std::cout << "Warning! Forbidden cells found!" << std::endl; 
+        }
+
     }
 }
 
