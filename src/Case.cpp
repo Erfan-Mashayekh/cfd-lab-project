@@ -276,7 +276,7 @@ void Case::simulate() {
         while (res > _tolerance){
             
           
-            // Set pressure Neumann Boundary Conditions
+            // TODO: Set pressure Neumann Boundary Conditions
             //_field.set_pressure_bc(_grid);
 
             // Perform SOR Solver and retrieve esidual for the loop continuity
