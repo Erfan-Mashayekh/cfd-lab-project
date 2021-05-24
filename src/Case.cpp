@@ -240,7 +240,8 @@ void Case::set_file_names(std::string file_name) {
 void Case::simulate() {
 
     assert(_output_freq > 0); //
-    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
+    std::cout << "Fluidchen is running and will print vtk output every "
+              << _output_freq <<"s until " << _t_end << "s..." << std::endl;
 
     // initialization
     double t = 0.0;
@@ -317,7 +318,7 @@ void Case::simulate() {
         // Output the vtk every 1s
         if (t >= step + _output_freq) {
             step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << std::endl;
+            std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
             output_vtk(step, 0);
         }
      

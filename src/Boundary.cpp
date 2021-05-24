@@ -234,12 +234,14 @@ void FixedWallBoundary::apply(Fields &field){
             else{
                 // <TOP, BOTTOM> or <LEFT, RIGHT> configurations are not allowed!
                 std::cout << "Warning! Forbidden cells found!" << std::endl;
+                // TODO: Implement safe way to ignore these
             }         
         }
 
         else{
             // More than 2 border cells are not allowed
-            std::cout << "Warning! Forbidden cells found!" << std::endl; 
+            std::cout << "Warning! Forbidden cells found!" << std::endl;
+            // TODO: Implement safe way to ignore these
         }
 
     }
@@ -380,6 +382,32 @@ void FreeSlipBoundary::apply(Fields &field) {
     }
 }
 
+/***************************************************
+*
+*  Overrides for 'apply_temperature()' virtual func.
+*
+***************************************************/
+
+void InflowBoundary::apply_temperature(Fields &field){
+
+    for (auto const& cell: _cells) {
+        // Set T    
+        field.T(cell->i(), cell->j()) =_inlet_temperature;
+    }
+}
+
+void OutflowBoundary::apply_temperature(Fields &field){
+
+    for (auto const& cell : _cells) {
+
+        // Assume single fluid cell neighbour
+        std::vector<border_position> border_pos = cell->borders();
+
+        // Set T
+        field.T(cell->i(), cell->j()) = field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
+    }
+}
+
 void FixedWallBoundary::apply_temperature(Fields &field) {
     for (auto const &cell : _cells) {
         int i = cell->i();
@@ -461,6 +489,7 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
                 } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)) {
                     // Southeast
                     field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i + 1, j) + field.T(i, j - 1));
+
                 } else if (cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)) {
                     // Southwest
                     field.T(i, j) = 2 * _wall_temperature[cell->wall_id()] - 0.5 * (field.T(i - 1, j) + field.T(i, j - 1));
@@ -470,26 +499,7 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
     }
 }
 
-void InflowBoundary::apply_temperature(Fields &field){
-
-    for (auto const& cell: _cells) {
-        // Set T    
-        field.T(cell->i(), cell->j()) =_inlet_temperature;
-    }
-}
-
-void OutflowBoundary::apply_temperature(Fields &field){
-
-    for (auto const& cell : _cells) {
-
-        // Assume single fluid cell neighbour
-        std::vector<border_position> border_pos = cell->borders();
-
-        // Set T
-        field.T(cell->i(), cell->j()) = field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-    }
-}
+void MovingWallBoundary::apply_temperature(Fields &field) {}
 
 void FreeSlipBoundary::apply_temperature(Fields &field) {}
 
-void MovingWallBoundary::apply_temperature(Fields &field) {}

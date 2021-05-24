@@ -103,26 +103,12 @@ void Fields::calculate_temperature(Grid &grid) {
                           _dt * (_alpha * Discretization::diffusion(_T, i, j) - Discretization::convection_T(_T, _U, _V, i, j));
         }
     }
-
+    // Copy T_new to T
     for (int i = 1; i < grid.imax() + 1; i++) {
         for (int j = 1; j < grid.jmax() + 1 ; j++) {
             _T(i, j) = T_new(i, j);
         }
-    }
-    // _T.copy(&T_new);
-    
-    // for (int i = 1; i < 10; i++) {
-    //     for (int j = 1; j < 10 ; j++) {
-    //         std::cout << T_new(i, j) << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // for (int i = 1; i < 10; i++) {
-    //     for (int j = 1; j < 10 ; j++) {
-    //         std::cout << _T(i, j) << " ";
-    //     }
-    //     std::cout << "\n";
-    // }    
+    }    
 }
 
 // calculate dt for adaptive time stepping
