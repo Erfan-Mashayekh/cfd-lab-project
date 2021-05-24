@@ -54,6 +54,19 @@ class Discretization {
     static double convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
 
     /**
+     * @brief Heat convection
+     *
+     * @param[in] Temperature field
+     * @param[in] x-velocity field
+     * @param[in] y-velocity field
+     * @param[in] x index
+     * @param[in] y index
+     * @param[out] result
+     *
+     */
+    static double convection_T(const Matrix<double> &T, const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+
+    /**
      * @brief Laplacian term discretization using central difference
      *
      * @param[in] data to be discretized

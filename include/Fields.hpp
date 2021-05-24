@@ -25,7 +25,7 @@ class Fields {
      * @param[in] initial pressure
      *
      */
-    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI);
+    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, double TI, double alpha, double beta, double GX, double GY);
 
     /**
      * @brief Calculates the convective and diffusive fluxes in x and y
@@ -34,7 +34,7 @@ class Fields {
      * @param[in] grid in which the fluxes are calculated
      *
      */
-    void calculate_fluxes(Grid &grid);
+    void calculate_fluxes(Grid &grid, bool energy_eq);
 
     /**
      * @brief Right hand side calculations using the fluxes for the pressure
@@ -52,6 +52,14 @@ class Fields {
      *
      */
     void calculate_velocities(Grid &grid);
+
+    /**
+     * @brief Temperature calculation using Forward Euler scheme
+     *
+     * @param[in] grid in which the calculations are done
+     *
+     */
+    void calculate_temperature(Grid &grid);
 
     /**
      * @brief Adaptive step size calculation using x-velocity condition,
@@ -79,6 +87,9 @@ class Fields {
     /// pressure index based access and modify
     double &p(int i, int j);
 
+    /// temperature index based access and modify
+    double &T(int i, int j);
+
     /// RHS index based access and modify
     double &rs(int i, int j);
 
@@ -101,6 +112,8 @@ class Fields {
     Matrix<double> _V;
     /// pressure matrix
     Matrix<double> _P;
+    /// temperature matrix
+    Matrix<double> _T;
     /// x-momentum flux matrix
     Matrix<double> _F;
     /// y-momentum flux matrix
@@ -118,4 +131,12 @@ class Fields {
     double _dt;
     /// adaptive timestep coefficient
     double _tau;
+    /// alpha coefficient
+    double _alpha;
+    /// beta coefficient
+    double _beta;
+    /// gravitation x-direction
+    double _GX;
+    /// gravitation x-direction
+    double _GY;
 };

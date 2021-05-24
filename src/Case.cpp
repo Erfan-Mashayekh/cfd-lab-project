@@ -25,7 +25,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
-    std::string geo_file; /* geometry file name */
     double nu;      /* viscosity */
     double UI;      /* velocity x-direction */
     double VI;      /* velocity y-direction */
@@ -44,15 +43,11 @@ Case::Case(std::string file_name, int argn, char **args) {
     double eps;     /* accuracy bound for pressure */
     double UIN;     /* inlet velocity x-direction */
     double VIN;     /* inlet velocity y-direction */
-    bool energy_eq; /* if energy equation is turned on */
     double TI;      /* initial temperature */
     double TIN;     /* inlet temperature */
     double beta;    /* thermal expansion coefficient */
     double alpha;   /* thermal diffusivity */
     int num_walls;  /* number of walls */
-    double iproc;   /* scaling factor for x-direction */ 
-    double jproc;   /* scaling factor for y-direction */
-
     std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
     std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
 
@@ -86,11 +81,11 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "UIN") file >> UIN;
                 if (var == "VIN") file >> VIN;
                 if (var == "energy_eq"){
-                    if (var == "on") energy_eq = true;
-                    else energy_eq = false;
+                    std::string state;
+                    file >> state;
+                    if (state == "on") _energy_eq = true;
+                    else _energy_eq = false;
                 }
-                if (var == "iproc") file >> iproc;  
-                if (var == "jproc") file >> jproc;
                 if (var == "TI") file >> TI;
                 if (var == "TIN") file >> TIN;
                 if (var == "beta") file >> beta;
@@ -116,7 +111,6 @@ Case::Case(std::string file_name, int argn, char **args) {
         }
     }
     file.close();
-
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
@@ -130,7 +124,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, GX, GY);
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -140,7 +134,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Construct boundaries
     // Inflow
     if (not _grid.inflow_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
         } else {
             _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
@@ -150,9 +144,10 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
     }
+
     // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
@@ -160,7 +155,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Moving wall
     if (not _grid.moving_wall_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
@@ -168,7 +163,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Free slip
     if (not _grid.free_slip_cells().empty()) {
-        if(energy_eq){
+        if(_energy_eq){
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
@@ -247,84 +242,92 @@ void Case::simulate() {
     assert(_output_freq > 0); //
     std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
 
-    // initialization
-    double t = 0.0;
-    double dt = _field.dt();
-    int timestep = 0;
-    double output_counter = 0.0;
-    double step = 0;
-    // time loop
-    while (t < _t_end) {
+    // // initialization
+    // double t = 0.0;
+    // double dt = _field.dt();
+    // int timestep = 0;
+    // double output_counter = 0.0;
+    // double step = 0;
+    // // time loop
+    // while (t < _t_end) {
 
-        // Applying velocity boundary condition for every 4 sides of the wall boundary
-        for (auto &boundary : _boundaries) {
-            boundary->apply(_field);
-        }
+    //     // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
+    //     for (auto &boundary : _boundaries) {
+    //         boundary->apply(_field);
+    //     }
 
-        // calculate Fn and Gn
-        _field.calculate_fluxes(_grid);
+    //     // Calculate Temperature if the energy equation is on
+    //     if(_energy_eq){
+    //         for (auto &boundary : _boundaries) {
+    //             boundary->apply_temperature(_field);
+    //         }
+    //         _field.calculate_temperature(_grid);
+    //     }
 
-        // Calculate Right-hand side of the pressure eq.
-        _field.calculate_rs(_grid);
+    //     // Calculate Fn and Gn
+    //     _field.calculate_fluxes(_grid, _energy_eq);
 
-        // SOR Loop
-        // Initialization of residual and iteration counter
-        int it = 0;
-        // Set initial tolerance
-        double res = _tolerance + 1.0;        
+    //     // Calculate Right-hand side of the pressure eq.
+    //     _field.calculate_rs(_grid);
+
+    //     // SOR Loop
+    //     // Initialization of residual and iteration counter
+    //     int it = 0;
+    //     // Set initial tolerance
+    //     double res = _tolerance + 1.0;        
         
-        while (res > _tolerance){
+    //     while (res > _tolerance){
             
           
-            // TODO: Set pressure Neumann Boundary Conditions
-            //_field.set_pressure_bc(_grid);
+    //         // TODO: Set pressure Neumann Boundary Conditions
+    //         //_field.set_pressure_bc(_grid);
 
-            // Perform SOR Solver and retrieve esidual for the loop continuity
-            res = _pressure_solver->solve(_field, _grid, _boundaries);
+    //         // Perform SOR Solver and retrieve esidual for the loop continuity
+    //         res = _pressure_solver->solve(_field, _grid, _boundaries);
 
-            // Increment the iteration counter
-            it++;
+    //         // Increment the iteration counter
+    //         it++;
 
-            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
-            /*
-            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
-            Here we use 100 for our case because it is already converged below that timestep.
-            */
+    //         // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
+    //         /*
+    //         The limit of the timestep that is used here should be changed if the grid or the dt is change. 
+    //         Here we use 100 for our case because it is already converged below that timestep.
+    //         */
 
-            //if(it > _max_iter && timestep > 10) {
-            //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
-            //    break;
-            //}
-        }
-
-
-        // Calculate the velocities at the next time step
-        _field.calculate_velocities(_grid);
-
-        // Calculate new time
-        t = t + dt;
-
-        // Increment the time step counter
-        timestep++;
-
-        // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid);
+    //         //if(it > _max_iter && timestep > 10) {
+    //         //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+    //         //    break;
+    //         //}
+    //     }
 
 
-        // Output the vtk every 1s
-        if (t >= step + _output_freq) {
-            step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << std::endl;
-            output_vtk(step, 0);
-        }
+    //     // Calculate the velocities at the next time step
+    //     _field.calculate_velocities(_grid);
+
+    //     // Calculate new time
+    //     t = t + dt;
+
+    //     // Increment the time step counter
+    //     timestep++;
+
+    //     // Calculate dt for adaptive time stepping
+    //     dt = _field.calculate_dt(_grid);
+
+
+    //     // Output the vtk every 1s
+    //     if (t >= step + _output_freq) {
+    //         step = step + _output_freq;
+    //         std::cout << "Printing vtk file at t = " << step << std::endl;
+    //         output_vtk(step, 0);
+    //     }
      
-    }
+    // }
 
-    // Output the final VTK file
-    output_vtk(step, 0);
+    // // Output the final VTK file
+    // output_vtk(step, 0);
 
-    // End message
-    std::cout << "Done!\n";
+    // // End message
+    // std::cout << "Done!\n";
 
 }
 
@@ -369,11 +372,20 @@ void Case::output_vtk(int timestep, int my_rank) {
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
 
+     // Temperature Array
+    vtkDoubleArray *Temperature = vtkDoubleArray::New();
+    Temperature->SetName("temperature");
+    Temperature->SetNumberOfComponents(1);
+
+
+
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
             double pressure = _field.p(i, j);
+            double temperature = _field.T(i, j);
             Pressure->InsertNextTuple(&pressure);
+            Temperature->InsertNextTuple(&temperature);
         }
     }
 
@@ -390,6 +402,10 @@ void Case::output_vtk(int timestep, int my_rank) {
         }
     }
 
+    // Add Temperature to Structured Grid
+    structuredGrid->GetCellData()->AddArray(Temperature);
+
+
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);
 
@@ -401,11 +417,12 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
     writer->Write();
+
 }
 
 void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {

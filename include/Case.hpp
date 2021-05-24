@@ -52,6 +52,8 @@ class Case {
     double _t_end;
     /// Solution file outputting frequency
     double _output_freq;
+    /// If energy equation is turned on 
+    bool _energy_eq = false; 
 
     Fields _field;
     Grid _grid;
