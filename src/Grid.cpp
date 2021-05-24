@@ -2,11 +2,14 @@
 #include "Enums.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <sstream>
 #include <vector>
-#include <cassert>
+
+using namespace std;
 
 Grid::Grid(std::string geom_name, Domain &domain) {
 
@@ -17,12 +20,12 @@ Grid::Grid(std::string geom_name, Domain &domain) {
     if (geom_name.compare("NONE") == 0) {
         std::cout << "Error: Please provide a geometry data file as a .pgm file in the .dat file!. Exiting!\n";
         exit(EXIT_FAILURE);
-    } 
+    }
 
     std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
                                                 std::vector<int>(_domain.domain_size_y + 2, 0));
     parse_geometry_file(geom_name, geometry_data);
-    assign_cell_types(geometry_data);    
+    assign_cell_types(geometry_data);
 }
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
@@ -31,9 +34,9 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     int j = 0;
 
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
-        
+
         i = 0;
-        
+
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
@@ -60,160 +63,12 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
                 _free_slip_cells.push_back(&_cells(i, j));
-            } 
+            }
 
             ++i;
         }
 
         ++j;
-
-
-
-
-    //Neighbour Assignment
-
-    // Corner cell 
-    // Bottom-Left Corner 
-    bool a = 0 ,b = 0 ,c = 0 ,d = 0 ;
-    i = 0;
-    j = 0;
-    if (_cells(i+1, j).type() == cell_type::FLUID) {
-        e = true;
-    }
-    if (_cells(i, j+1).type() == cell_type::FLUID) {
-        n = true ;
-    }
-    _cells(i,j).SetCellNeighbour(a,b,c,d);
-
-    // Top-Left Corner
-    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-    i = 0;
-    j = _domain.size_y + 1;
-    if (_cells(i+1, j).type() == cell_type::FLUID) {
-        e = true;
-    }
-    if (_cells(i, j-1).type() == cell_type::FLUID) {
-        s = true ;
-    }
-    _cells(i,j).SetCellNeighbour(a,b,c,d);
-
-    // Top-Right Corner 
-    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-    i = _domain.size_x + 1;
-    j = Grid::_domain.size_y + 1;
-    if (_cells(i-1, j).type() == cell_type::FLUID) {
-        w = true;
-    }
-    if (_cells(i, j-1).type() == cell_type::FLUID) {
-        s = true ;
-    }
-    _cells(i,j).SetCellNeighbour(a,b,c,d);
-
-    // Bottom-Right Corner 
-    a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-    i = Grid::_domain.size_x + 1;
-    j = 0;
-    if (_cells(i-1, j).type() == cell_type::FLUID) {
-        w = true;
-    }
-    if (_cells(i, j+1).type() == cell_type::FLUID) {
-        n = true ;
-    }
-    _cells(i,j).SetCellNeighbour(a,b,c,d);
-    
-    
-    // Bottom cells
-    j = 0;
-    for (int i = 1; i < _domain.size_x + 1; ++i) {
-        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-        if (_cells(i-1, j).type() == cell_type::FLUID) {
-            w = true;
-        }
-        if (_cells(i, j+1).type() == cell_type::FLUID) {
-            n = true ;
-        }
-        if (_cells(i+1, j).type() == cell_type::FLUID) {
-            e = true ;
-        }
-        _cells(i,j).SetCellNeighbour(a,b,c,d);
-    }
-
-    // Top Cells
-    j = Grid::_domain.size_y + 1;
-
-    for (int i = 1; i < _domain.size_x + 1; ++i) {
-        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-        if (_cells(i-1, j).type() == cell_type::FLUID) {
-            w = true;
-        }
-        if (_cells(i, j-1).type() == cell_type::FLUID) {
-            s = true ;
-        }
-        if (_cells(i+1, j).type() == cell_type::FLUID) {
-            e = true ;
-        }
-        _cells(i,j).SetCellNeighbour(a,b,c,d);
-    }
-
-    // Left Cells
-    i = 0;
-    for (int j = 1; j < _domain.size_y + 1; ++j) {
-        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-        if (_cells(i, j+1).type() == cell_type::FLUID) {
-            n = true;
-        }
-        if (_cells(i, j-1).type() == cell_type::FLUID) {
-            s = true ;
-        }
-        if (_cells(i+1, j).type() == cell_type::FLUID) {
-            e = true ;
-        }
-        _cells(i,j).SetCellNeighbour(a,b,c,d);
-    }
-    // Right Cells
-    i = Grid::_domain.size_x + 1;
-    for (int j = 1; j < _domain.size_y + 1; ++j) {
-        a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-        if (_cells(i, j+1).type() == cell_type::FLUID) {
-            n = true;
-        }
-        if (_cells(i, j-1).type() == cell_type::FLUID) {
-            s = true ;
-        }
-        if (_cells(i-1, j).type() == cell_type::FLUID) {
-            w = true ;
-        }
-        _cells(i,j).SetCellNeighbour(a,b,c,d);
-    }
-
-    // Inner cells
-    for (int i = 1; i < _domain.size_x + 1; ++i) {
-        for (int j = 1; j < _domain.size_y + 1; ++j) {
-            a = 0 ;b = 0 ;c = 0 ;d = 0 ;
-            if (_cells(i, j+1).type() == cell_type::FLUID) {
-                n = true;
-            }
-            if (_cells(i, j-1).type() == cell_type::FLUID) {
-                s = true ;
-            }
-            if (_cells(i-1, j).type() == cell_type::FLUID) {
-                w = true ;
-            }
-            if (_cells(i+1, j).type() == cell_type::FLUID) {
-                e = true ;
-            }
-            _cells(i,j).SetCellNeighbour(a,b,c,d);
-        }
-    }
-
-
-
-
-
-
-
-
-
     }
 
     // Corner cell neighbour assigment
@@ -353,10 +208,6 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                     _cells(i, j).add_border(border_position::TOP);
                 }
             }
-
-
-
-
         }
     }
 }
@@ -396,6 +247,49 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     }
 
     infile.close();
+
+    // for (int col = numcols - 1; col > -1; --col) {
+    //         std::cout<<endl;
+    //     for (int row = 0; row < numrows; ++row) {
+    //         std::cout<<geometry_data[row][col];
+    //     }
+    // }
+
+    for (int col = 0; col < numcols; ++col) {
+        std::cout << endl;
+        for (int row = 0; row < numrows; ++row) {
+            std::cout << geometry_data[row][col];
+        }
+    }
+
+    std::cout << endl << "Above is your geometry " << endl << endl;
+
+    int ratio = 2; //this can be implemented as ratio from from the datfile and the pgm file so dat/pgm
+    int numrow2 = int(numrows) * ratio;
+    int numcol2 = int(numcols) * ratio;
+    // int[] rescaled = new int[numrow2*numcol2] ;
+    // int geometry_data_rescaled = [numrow2][numcol2];
+    int geometry_data_rescaled[numrow2][numcol2];
+
+    int px, py;
+    for (int i = 0; i < numrow2; i++) {
+        for (int j = 0; j < numcol2; j++) {
+            px = int(i / ratio);
+            py = int(j / ratio);
+            geometry_data_rescaled[i][j] = geometry_data[px][py];
+        }
+    }
+
+    std::cout << "This is rescaled to  : " << endl << endl;
+    for (int j = 0; j < numcol2; j++) {
+        for (int i = 0; i < numrow2; i++) {
+
+            cout << geometry_data_rescaled[i][j];
+        }
+        cout << endl;
+    }
+
+    std::cout << endl << "Above is your rescaled geometry " << endl << endl;
 }
 
 int Grid::imax() const { return _domain.size_x; }
@@ -418,7 +312,7 @@ const std::vector<Cell *> &Grid::fixed_wall_cells() const { return _fixed_wall_c
 
 const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall_cells; }
 
-const std::vector<Cell *> &Grid::free_slip_cells() const{ return _free_slip_cells; }
+const std::vector<Cell *> &Grid::free_slip_cells() const { return _free_slip_cells; }
 
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
