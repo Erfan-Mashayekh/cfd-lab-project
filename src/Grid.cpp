@@ -289,7 +289,10 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
         cout << endl;
     }
 
+
     std::cout << endl << "Above is your rescaled geometry " << endl << endl;
+
+    
 }
 
 int Grid::imax() const { return _domain.size_x; }
