@@ -404,8 +404,9 @@ void Case::output_vtk(int timestep, int my_rank) {
     }
 
     // Add Temperature to Structured Grid
-    structuredGrid->GetCellData()->AddArray(Temperature);
-
+    if(_energy_eq){
+        structuredGrid->GetCellData()->AddArray(Temperature);
+    }
 
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);

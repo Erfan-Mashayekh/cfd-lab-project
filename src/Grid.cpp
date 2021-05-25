@@ -22,7 +22,7 @@ Grid::Grid(std::string geom_name, Domain &domain) {
     std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
                                                 std::vector<int>(_domain.domain_size_y + 2, 0));
     parse_geometry_file(geom_name, geometry_data);
-    assign_cell_types(geometry_data);    
+    assign_cell_types(geometry_data);
 }
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
@@ -208,7 +208,33 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
     }
 
+    /***************************************
+     * Change forbidden cells to fluid cells
+     * ************************************/
+
+    std::vector<int> forbidden_cells;
+
+    for(int i; i < _fixed_wall_cells.size(); i++){
+
+        std::vector<border_position> border_positions = _fixed_wall_cells[i]->borders();
+
+        if(border_positions.size() > 2){
+            forbidden_cells.push_back(i);
+        }
+    }
+
+
+    for(int i: forbidden_cells){
+
+        _fixed_wall_cells[i]->type() == cell_type::FLUID;
+        _fluid_cells.push_back((_fixed_wall_cells[i]));
+        _fixed_wall_cells.erase(_fixed_wall_cells.begin() + i);
+        std::cout << "Warning! Converting Forbidden cell found at [" 
+        << _fixed_wall_cells[i]->i() << ", " << _fixed_wall_cells[i]->j() << "] to fluid cell" << std::endl;
+    }
 }
+
+
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
 

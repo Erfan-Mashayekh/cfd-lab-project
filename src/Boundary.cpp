@@ -236,14 +236,12 @@ void FixedWallBoundary::apply(Fields &field){
             else{
                 // <TOP, BOTTOM> or <LEFT, RIGHT> configurations are not allowed!
                 std::cout << "Warning! Forbidden cells found!" << std::endl;
-                // TODO: Implement safe way to ignore these
             }         
         }
 
         else{
             // More than 2 border cells are not allowed
             std::cout << "Warning! Forbidden cells found!" << std::endl;
-            // TODO: Implement safe way to ignore these
         }
 
     }
