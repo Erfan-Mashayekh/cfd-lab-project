@@ -207,6 +207,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             }
         }
     }
+
 }
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
@@ -244,6 +245,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     }
 
     infile.close();
+
 }
 
 int Grid::imax() const { return _domain.size_x; }

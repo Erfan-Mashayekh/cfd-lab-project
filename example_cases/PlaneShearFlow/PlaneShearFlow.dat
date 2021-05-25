@@ -1,7 +1,7 @@
 #--------------------------------------------
 #           geometry file            
 #--------------------------------------------
-geo_file     ChannelWithObstacle.pgm
+geo_file     PlaneShearFlow.pgm
 
 #--------------------------------------------
 #            size of the domain             
@@ -22,14 +22,14 @@ jmax         20
 # tau: safety factor for time step size control
 #--------------------------------------------
 dt           0.05
-t_end        20.0
+t_end        30.0
 tau          0.5
 
 #--------------------------------------------
 #               output
 # dt_value: time interval for writing files
 #--------------------------------------------
-dt_value     0.2
+dt_value     5.0
 
 #--------------------------------------------
 #               pressure
@@ -37,16 +37,17 @@ dt_value     0.2
 # eps: tolerance for pressure iteration (residual < eps)
 # omg: relaxation factor for SOR
 # gamma: upwind differencing factor
+# dp: pressure drop
 #--------------------------------------------
 itermax      500
 eps          0.001
 omg          1.7
 gamma        0.5
-
+dp           4.0
 #--------------------------------------------
 #     kinematic viscosity
 #--------------------------------------------
-nu           0.001
+nu           0.1
 
 #--------------------------------------------
 #        gravity / external forces

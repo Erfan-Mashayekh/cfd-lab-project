@@ -112,7 +112,7 @@ void Fields::calculate_temperature(Grid &grid) {
 }
 
 // calculate dt for adaptive time stepping
-double Fields::calculate_dt(Grid &grid) {
+double Fields::calculate_dt(Grid &grid, bool energy_eq) {
 
     double dx = grid.dx();
     double dy = grid.dy();
@@ -132,13 +132,16 @@ double Fields::calculate_dt(Grid &grid) {
 
     // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
     // and avoid oscillations
-    // double _dt1 = (0.5/_nu) * pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
     double _dt1 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
     double _dt2 = grid.dx()/Umax;
     double _dt3 = grid.dy()/Vmax;
-    double _dt4 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha);
-
-    _dt =  _tau * std::min(std::min(std::min( _dt1 , _dt2), _dt3), _dt4);
+    
+    if(energy_eq){
+        double _dt4 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha);
+        _dt =  _tau * std::min(std::min(std::min( _dt1 , _dt2), _dt3), _dt4);
+    }else{
+        _dt =  _tau * std::min(std::min( _dt1 , _dt2), _dt3);
+    }
 
     return _dt;
 }
