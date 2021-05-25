@@ -24,7 +24,7 @@ cd GroupX_CFDLab
 mkdir build && cd build
 cmake ..
 make
-make install # optional, check prefix
+make install # optional
 ```
 
 These commands will create the executable `fluidchen` and copy it to the default directory `/usr/local/bin` . If you want to install to a custom path, execute the cmake command as
