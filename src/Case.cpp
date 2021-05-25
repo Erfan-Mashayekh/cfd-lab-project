@@ -255,6 +255,7 @@ void Case::simulate() {
 
     // End message
     std::cout << "Done!\n";
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

@@ -114,17 +114,17 @@ void Fields::set_pressure_bc(Grid &grid){
     for (int j = 1; j < grid.jmax() + 1; j++) {
          _P(0, j) = _P(1, j);
          _P(grid.imax() + 1, j) = _P(grid.imax(), j);
-    }
+    } 
 }
 
-    double &Fields::p(int i, int j) { return _P(i, j); }
-    double &Fields::u(int i, int j) { return _U(i, j); }
-    double &Fields::v(int i, int j) { return _V(i, j); }
-    double &Fields::f(int i, int j) { return _F(i, j); }
-    double &Fields::g(int i, int j) { return _G(i, j); }
-    double &Fields::rs(int i, int j) { return _RS(i, j); }
+double &Fields::p(int i, int j) { return _P(i, j); }
+double &Fields::u(int i, int j) { return _U(i, j); }
+double &Fields::v(int i, int j) { return _V(i, j); }
+double &Fields::f(int i, int j) { return _F(i, j); }
+double &Fields::g(int i, int j) { return _G(i, j); }
+double &Fields::rs(int i, int j) { return _RS(i, j); }
 
-    Matrix<double> &Fields::p_matrix() { return _P; }
+Matrix<double> &Fields::p_matrix() { return _P; }
 
-    double Fields::dt() const { return _dt; }
+double Fields::dt() const { return _dt; }
 

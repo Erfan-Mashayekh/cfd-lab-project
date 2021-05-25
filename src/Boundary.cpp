@@ -8,6 +8,7 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, do
     : _cells(cells), _wall_temperature(wall_temperature) {}
 
 
+
 void FixedWallBoundary::apply(Fields &field){
 
     /** 
