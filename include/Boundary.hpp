@@ -50,7 +50,7 @@ class InflowBoundary : public Boundary {
  */
 class OutflowBoundary : public Boundary {
   public:
-    OutflowBoundary(std::vector<Cell *> cells);
+    OutflowBoundary(std::vector<Cell *> cells, double initial_pressure);
 
     virtual ~OutflowBoundary() = default;
     virtual void apply(Fields &field) override;
@@ -58,6 +58,7 @@ class OutflowBoundary : public Boundary {
 
   private:
     std::vector<Cell *> _cells;
+    double _initial_pressure;
 };
 
 /**

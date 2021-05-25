@@ -142,7 +142,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Outflow
     if (not _grid.outflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
+        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), PI));
     }
 
     // Fixed wall
@@ -281,7 +281,7 @@ void Case::simulate() {
           
             // TODO: Set pressure Neumann Boundary Conditions
             //_field.set_pressure_bc(_grid);
-
+            
             // Perform SOR Solver and retrieve esidual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
 
@@ -294,10 +294,10 @@ void Case::simulate() {
             Here we use 100 for our case because it is already converged below that timestep.
             */
 
-            //if(it > _max_iter && timestep > 10) {
-            //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
-            //    break;
-            //}
+            if(it > _max_iter && timestep > 100) {
+               std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+               break;
+            }
         }
 
 
@@ -311,7 +311,7 @@ void Case::simulate() {
         timestep++;
 
         // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid);
+        dt = _field.calculate_dt(_grid, _energy_eq);
 
 
         // Output the vtk every 1s

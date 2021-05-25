@@ -16,7 +16,7 @@ InflowBoundary::InflowBoundary(std::vector<Cell *> cells, double inlet_velocity_
 InflowBoundary::InflowBoundary(std::vector<Cell *> cells, double inlet_velocity_x, double inlet_velocity_y, double inlet_temperature)
                 : _cells(cells), _inlet_velocity_x(inlet_velocity_x), _inlet_velocity_y(inlet_velocity_y), _inlet_temperature(inlet_temperature) {}
 
-OutflowBoundary::OutflowBoundary(std::vector<Cell *> cells) : _cells(cells) {}
+OutflowBoundary::OutflowBoundary(std::vector<Cell *> cells, double initial_pressure) : _cells(cells), _initial_pressure(initial_pressure) {}
 
 FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells) : _cells(cells) {}
 
@@ -43,17 +43,18 @@ FreeSlipBoundary::FreeSlipBoundary(std::vector<Cell *> cells, std::map<int, doub
 void InflowBoundary::apply(Fields &field){
 
     for (auto const& cell: _cells) {
-        // Set inlet velocities (Neumann boundary)        
-        // Set inlet velocities
+
+        std::vector<border_position> border_pos = cell->borders();
+        // u
         field.u(cell->i(), cell->j()) = _inlet_velocity_x;
-        
+        // v
         field.v(cell->i(), cell->j()) = _inlet_velocity_y;
-
-        // Set F and G
+        // F
         field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
-
+        // G
         field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
-
+        // p
+        field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
     }
 }
 
@@ -62,21 +63,22 @@ void OutflowBoundary::apply(Fields &field){
     for (auto const& cell : _cells) {
 
         // Assume single fluid cell neighbour
+        
         std::vector<border_position> border_pos = cell->borders();
 
         if(border_pos.size() != 1){
             std::cout << "Warning! Outflow can have only single fluid neighbour cells!" << std::endl;
         }
+        // u
         field.u(cell->i()-1, cell->j()) = field.u(cell->neighbour(border_pos.at(0))->i()-1, cell->neighbour(border_pos.at(0))->j());
-        
+        // v
         field.v(cell->i(), cell->j()) = field.v(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-
-        // Set F and G
+        // F
         field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
-
+        // G
         field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
-
-        field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
+        // p
+        field.p(cell->i(), cell->j()) = _initial_pressure; 
     }
 }
 
@@ -109,7 +111,7 @@ void FixedWallBoundary::apply(Fields &field){
 
             switch(border_positions.at(0)){
 
-                case border_position::RIGHT:             
+                case border_position::RIGHT:          
                     // u 
                     field.u(cell->i(), cell->j()) = 0.0;
                     // v 
@@ -121,7 +123,7 @@ void FixedWallBoundary::apply(Fields &field){
 
                     break;
 
-                case border_position::LEFT:           
+                case border_position::LEFT:         
                     // u - Take the staggered grid position into consideration
                     field.u(cell->i()-1, cell->j()) = 0.0;
                     // v 
@@ -179,7 +181,7 @@ void FixedWallBoundary::apply(Fields &field){
                 field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::TOP)->i(), cell->neighbour(border_position::TOP)->j())
                                                       + field.p(cell->neighbour(border_position::RIGHT)->i(), cell->neighbour(border_position::RIGHT)->j()) );
             }
-            else if(cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)){                              
+            else if(cell->is_border(border_position::TOP) && cell->is_border(border_position::LEFT)){       
                 // u
                 field.u(cell->i()-1, cell->j()) = 0.0;
                 // v
@@ -196,7 +198,7 @@ void FixedWallBoundary::apply(Fields &field){
                 field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::TOP)->i(), cell->neighbour(border_position::TOP)->j())
                                                       + field.p(cell->neighbour(border_position::LEFT)->i(), cell->neighbour(border_position::LEFT)->j()) );
             }
-            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)){               
+            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::RIGHT)){    
                 // u 
                 field.u(cell->i(), cell->j()) = 0.0;
                 // v 
@@ -213,7 +215,7 @@ void FixedWallBoundary::apply(Fields &field){
                 field.p(cell->i(), cell->j()) = 0.5 * ( field.p(cell->neighbour(border_position::BOTTOM)->i(), cell->neighbour(border_position::BOTTOM)->j())
                                                       + field.p(cell->neighbour(border_position::RIGHT)->i(), cell->neighbour(border_position::RIGHT)->j()) );
             }
-            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)){               
+            else if(cell->is_border(border_position::BOTTOM) && cell->is_border(border_position::LEFT)){     
                 // u 
                 field.u(cell->i()-1, cell->j()) = 0.0;
                 // v 
@@ -268,7 +270,11 @@ void MovingWallBoundary::apply(Fields &field) {
         // u on the top 
         field.u(cell->i(), cell->j()) = 2.0 * _wall_velocity[cell->wall_id()] - field.u(cell->i(), cell->neighbour(border_pos.at(0))->j());
         // F on the left 
+        field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+        // G on the left 
         field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+        // p
+        field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_position::BOTTOM)->j());
     }
 }
 
