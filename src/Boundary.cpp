@@ -503,7 +503,7 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
     }
 }
 
-void MovingWallBoundary::apply_temperature(Fields &field) {}
+void MovingWallBoundary::apply_temperature(Fields &field) {(void)field;}
 
-void FreeSlipBoundary::apply_temperature(Fields &field) {}
+void FreeSlipBoundary::apply_temperature(Fields &field) {(void)field;}
 

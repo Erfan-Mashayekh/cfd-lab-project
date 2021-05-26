@@ -48,7 +48,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Outlet
                 _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
                 _outflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) >= 3, geometry_data.at(i_geom).at(j_geom) <= 7) {
+            } else if (geometry_data.at(i_geom).at(j_geom) <= 7) { // Numbers 3-7
                 // Fixed wall
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
@@ -209,12 +209,12 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
 
     /***************************************
-     * Change forbidden cells to fluid cells
+     * Warn presence of Forbidden cells 
      * ************************************/
 
     std::vector<int> forbidden_cells;
 
-    for(int i; i < _fixed_wall_cells.size(); i++){
+    for(size_t i; i < _fixed_wall_cells.size(); i++){
 
         std::vector<border_position> border_positions = _fixed_wall_cells[i]->borders();
 
@@ -226,11 +226,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
     for(int i: forbidden_cells){
 
-        _fixed_wall_cells[i]->type() == cell_type::FLUID;
-        _fluid_cells.push_back((_fixed_wall_cells[i]));
-        _fixed_wall_cells.erase(_fixed_wall_cells.begin() + i);
-        std::cout << "Warning! Converting Forbidden cell found at [" 
-        << _fixed_wall_cells[i]->i() << ", " << _fixed_wall_cells[i]->j() << "] to fluid cell" << std::endl;
+        std::cout << "Warning! Forbidden cell found at [" 
+        << _fixed_wall_cells.at(i)->i() << ", " << _fixed_wall_cells.at(i)->j() 
+        << "]. Try converting to fluid cell..." << std::endl;
+        /* Uncomment below to turn forbidden cells to fluid cells */
+        // _fixed_wall_cells[i]->type() == cell_type::FLUID;
+        // _fluid_cells.push_back((_fixed_wall_cells[i]));
+        // _fixed_wall_cells.erase(_fixed_wall_cells.begin() + i);
     }
 }
 
@@ -238,7 +240,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
 
-    int numcols, numrows, depth;
+    size_t numcols, numrows, depth;
 
     std::ifstream infile(filedoc);
     std::stringstream ss;
@@ -260,12 +262,12 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    assert(numrows == geometry_data.size() && "Dimension mismatch: .pgm vs .dat");
-    assert(numcols == geometry_data[0].size() && "Dimension mismatch: .pgm vs .dat");
+    assert(numrows == geometry_data.size());
+    assert(numcols == geometry_data[0].size());
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {
-        for (int row = 0; row < numrows; ++row) {
+        for (size_t row = 0; row < numrows; ++row) {
             ss >> geometry_data[row][col];
         }
     }

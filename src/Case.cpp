@@ -22,6 +22,8 @@ namespace filesystem = std::filesystem;
 #include <vtkTuple.h>
 
 Case::Case(std::string file_name, int argn, char **args) {
+    (void)argn;
+    (void)args; // Remove if additional arguments are used
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
@@ -247,7 +249,6 @@ void Case::simulate() {
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
-    double output_counter = 0.0;
     double step = 0;
     // time loop
     while (t < _t_end) {
