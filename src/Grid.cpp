@@ -26,7 +26,15 @@ Grid::Grid(std::string geom_name, Domain &domain) {
 }
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
-
+    /*
+        Geometry ID for each cell:
+            FLUID,         ->  0       
+            INFLOW,        ->  1       
+            OUTFLOW,       ->  2       
+            FIXED_WALL,    ->  3-7     
+            MOVING_WALL,   ->  8       
+            FREE_SLIP_WALL ->  9                               
+    */
     int i = 0;
     int j = 0;
 
@@ -225,14 +233,12 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
 
     for(int i: forbidden_cells){
-
-        std::cout << "Warning! Forbidden cell found at [" 
+        
+        std::cout << "Error! Forbidden cell found at [" 
         << _fixed_wall_cells.at(i)->i() << ", " << _fixed_wall_cells.at(i)->j() 
-        << "]. Try converting to fluid cell..." << std::endl;
-        /* Uncomment below to turn forbidden cells to fluid cells */
-        // _fixed_wall_cells[i]->type() == cell_type::FLUID;
-        // _fluid_cells.push_back((_fixed_wall_cells[i]));
-        // _fixed_wall_cells.erase(_fixed_wall_cells.begin() + i);
+        << "]. Exiting ... \n " << "Try converting to fluid cell..." << std::endl;
+
+        exit(EXIT_FAILURE);        
     }
 }
 

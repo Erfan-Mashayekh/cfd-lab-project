@@ -2,6 +2,7 @@
 
 #include <vector>
 
+
 /**
  * @brief General 2D data structure around std::vector, in column
  * major format.
@@ -58,7 +59,14 @@ template <typename T> class Matrix {
      * @param[out] pointer to the beginning of the vector
      */
     const T *data() const { return _container.data(); }
-
+    
+    /**
+     * @brief Pointer representation of underlying data
+     *
+     * @param[out] pointer to the beginning of the vector
+     */   
+    std::vector<T> *container() { return &_container; }
+    
     /**
      * @brief Access of the size of the structure
      *
