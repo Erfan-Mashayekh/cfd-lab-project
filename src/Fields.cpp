@@ -102,9 +102,9 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
     double dy = grid.dy();
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    double Umax = 0.0, Vmax = 0.0;
-    Umax = *std::max_element(_U.container()->begin(), _U.container()->end(), abs_compare);
-    Vmax = *std::max_element(_V.container()->begin(), _V.container()->end(), abs_compare);
+    double Umax , Vmax;
+    Umax = std::abs(*std::max_element(_U.container()->begin(), _U.container()->end(), abs_compare));
+    Vmax = std::abs(*std::max_element(_V.container()->begin(), _V.container()->end(), abs_compare));
 
     // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
     // and avoid oscillations
@@ -117,7 +117,7 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
     }
 
     _dt = _tau * *std::min_element(dt.begin(), dt.end());
-
+            
     return _dt;
 }
 
