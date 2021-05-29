@@ -112,15 +112,11 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
     dt.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
     dt.push_back(grid.dx()/Umax);
     dt.push_back(grid.dy()/Vmax);
-
-    std::vector<double>::iterator min_value;
-
     if(energy_eq){
         dt.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha));
-        min_value =  _tau * std::min_element(dt.begin(), dt.end());
-    }else{
-        min_value =  _tau * std::min_element(dt.begin(), dt.end());
     }
+
+    _dt = _tau * *std::min_element(dt.begin(), dt.end());
 
     return _dt;
 }
