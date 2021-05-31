@@ -106,7 +106,8 @@ class Fields {
     Matrix<double> _P;
     /// temperature matrix
     Matrix<double> _T;
-    /// Auxiliary temperature matrix used in the calculate_temperature function
+    /// Auxiliary temperature
+    /// to store intermediate temp.
     Matrix<double> _T_new;
     /// x-momentum flux matrix
     Matrix<double> _F;

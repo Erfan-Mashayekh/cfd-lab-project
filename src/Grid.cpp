@@ -19,8 +19,8 @@ Grid::Grid(std::string geom_name, Domain &domain) {
         exit(EXIT_FAILURE);
     } 
 
-    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
-                                                std::vector<int>(_domain.domain_size_y + 2, 0));
+    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2, std::vector<int>(_domain.domain_size_y + 2, 0));
+     
     parse_geometry_file(geom_name, geometry_data);
     assign_cell_types(geometry_data);
 }
@@ -216,9 +216,9 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
     }
 
-    /***************************************
-     * Warn presence of Forbidden cells 
-     * ************************************/
+    /*******************************************
+     * Terminate if Forbidden cells are present 
+     ******************************************/
 
     std::vector<int> forbidden_cells;
 
@@ -232,11 +232,11 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
 
 
-    for(int i: forbidden_cells){
+    if(forbidden_cells.size() > 0){
         
         std::cout << "Error! Forbidden cell found at [" 
         << _fixed_wall_cells.at(i)->i() << ", " << _fixed_wall_cells.at(i)->j() 
-        << "]. Exiting ... \n " << "Try converting to fluid cell..." << std::endl;
+        << "]. Exiting ... Try converting to fluid cell..." << std::endl;
 
         exit(EXIT_FAILURE);        
     }
