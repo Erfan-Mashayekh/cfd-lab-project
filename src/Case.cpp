@@ -9,6 +9,7 @@
 #include <vector>
 #include <cassert>
 #include <regex>
+#include <limits>
 
 namespace filesystem = std::filesystem;
 
@@ -22,6 +23,8 @@ namespace filesystem = std::filesystem;
 #include <vtkTuple.h>
 
 Case::Case(std::string file_name, int argn, char **args) {
+    (void)argn;
+    (void)args; // Remove if additional arguments are used
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
@@ -92,6 +95,15 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "alpha") file >> alpha;
                 if (var == "num_walls") file >> num_walls;
 
+                // In the following code,
+                // - var reads the 'wall_vel_x' or 'wall_temp_x'
+                // - regex_search for any one/two digit index
+                // in the string and extracts the digit to idx
+                // - then it checks if the read string contains
+                // 'wal_vel' or 'wall_temp'
+                // - Depending on the type of variable (vel/temp)
+                // the respective value is stored in the map with 
+                // value and the idx 
                 std::string str_vel = "wall_vel";
                 std::string str_temp = "wall_temp";
                 std::regex match_idx("[0-9][0-9]*");
@@ -142,7 +154,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Outflow
     if (not _grid.outflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells()));
+        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), PI));
     }
 
     // Fixed wall
@@ -240,94 +252,90 @@ void Case::set_file_names(std::string file_name) {
 void Case::simulate() {
 
     assert(_output_freq > 0); //
-    std::cout << "Fluidchen is running and will print vtk output every "<< _output_freq <<" second!" << std::endl;
+    std::cout << "Fluidchen is running and will print vtk output every "
+              << _output_freq <<"s until " << _t_end << "s..." << std::endl;
 
-    // // initialization
-    // double t = 0.0;
-    // double dt = _field.dt();
-    // int timestep = 0;
-    // double output_counter = 0.0;
-    // double step = 0;
-    // // time loop
-    // while (t < _t_end) {
+    // initialization
+    double t = 0.0;
+    double dt = _field.dt();
+    int timestep = 0;
+    double step = 0;
+    // time loop
+    while (t < _t_end) {
 
-    //     // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
-    //     for (auto &boundary : _boundaries) {
-    //         boundary->apply(_field);
-    //     }
+        // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
+        for (auto &boundary : _boundaries) {
+            boundary->apply(_field);
+        }
 
-    //     // Calculate Temperature if the energy equation is on
-    //     if(_energy_eq){
-    //         for (auto &boundary : _boundaries) {
-    //             boundary->apply_temperature(_field);
-    //         }
-    //         _field.calculate_temperature(_grid);
-    //     }
+        // Calculate Temperature if the energy equation is on
+        if(_energy_eq){
+            for (auto &boundary : _boundaries) {
+                boundary->apply_temperature(_field);
+            }
+            _field.calculate_temperature(_grid);
+        }
 
-    //     // Calculate Fn and Gn
-    //     _field.calculate_fluxes(_grid, _energy_eq);
+        // Calculate Fn and Gn
+        _field.calculate_fluxes(_grid, _energy_eq);
 
-    //     // Calculate Right-hand side of the pressure eq.
-    //     _field.calculate_rs(_grid);
+        // Calculate Right-hand side of the pressure eq.
+        _field.calculate_rs(_grid);
 
-    //     // SOR Loop
-    //     // Initialization of residual and iteration counter
-    //     int it = 0;
-    //     // Set initial tolerance
-    //     double res = _tolerance + 1.0;        
+        // SOR Loop
+        // Initialization of residual and iteration counter
+        int it = 0;
+        // Set initial tolerance
+        double res =  std::numeric_limits<double>::max();        
         
-    //     while (res > _tolerance){
+        while (res > _tolerance){
             
           
-    //         // TODO: Set pressure Neumann Boundary Conditions
-    //         //_field.set_pressure_bc(_grid);
+            // TODO: Set pressure Neumann Boundary Conditions
+            //_field.set_pressure_bc(_grid);
+            
+            // Perform SOR Solver and retrieve esidual for the loop continuity
+            res = _pressure_solver->solve(_field, _grid, _boundaries);
 
-    //         // Perform SOR Solver and retrieve esidual for the loop continuity
-    //         res = _pressure_solver->solve(_field, _grid, _boundaries);
+            // Increment the iteration counter
+            it++;
 
-    //         // Increment the iteration counter
-    //         it++;
-
-    //         // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
-    //         /*
-    //         The limit of the timestep that is used here should be changed if the grid or the dt is change. 
-    //         Here we use 100 for our case because it is already converged below that timestep.
-    //         */
-
-    //         //if(it > _max_iter && timestep > 10) {
-    //         //    std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
-    //         //    break;
-    //         //}
-    //     }
+            // Check if SOR didn't converge
+            if(it > _max_iter) {
+               std::cout << "WARNING! SOR reached maximum number of iterations at t = " 
+               << t << ". Residual = " << res << std::endl;
+               break;
+            }
+        }
 
 
-    //     // Calculate the velocities at the next time step
-    //     _field.calculate_velocities(_grid);
+        // Calculate the velocities at the next time step
+        _field.calculate_velocities(_grid);
 
-    //     // Calculate new time
-    //     t = t + dt;
+        // Calculate new time
+        t = t + dt;
 
-    //     // Increment the time step counter
-    //     timestep++;
+        // Increment the time step counter
+        timestep++;
 
-    //     // Calculate dt for adaptive time stepping
-    //     dt = _field.calculate_dt(_grid);
+        // Calculate dt for adaptive time stepping
+        dt = _field.calculate_dt(_grid, _energy_eq);
 
 
-    //     // Output the vtk every 1s
-    //     if (t >= step + _output_freq) {
-    //         step = step + _output_freq;
-    //         std::cout << "Printing vtk file at t = " << step << std::endl;
-    //         output_vtk(step, 0);
-    //     }
+        // Output the vtk every 1s
+        if (t >= step + _output_freq) {
+            step = step + _output_freq;
+            std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
+            output_vtk(step, 0);
+        }
      
-    // }
+    }
 
-    // // Output the final VTK file
-    // output_vtk(step, 0);
+    // Output the final VTK file
+    output_vtk(step, 0);
 
-    // // End message
-    // std::cout << "Done!\n";
+    // End message
+    std::cout << "Done!\n";
 
 }
 
@@ -403,8 +411,9 @@ void Case::output_vtk(int timestep, int my_rank) {
     }
 
     // Add Temperature to Structured Grid
-    structuredGrid->GetCellData()->AddArray(Temperature);
-
+    if(_energy_eq){
+        structuredGrid->GetCellData()->AddArray(Temperature);
+    }
 
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);

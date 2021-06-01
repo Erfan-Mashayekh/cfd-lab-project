@@ -68,15 +68,7 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    double calculate_dt(Grid &grid);
-
-    /**
-    * @brief Set the Neumann boundary conditions .
-    * This should be done at each iteration of solve() in SOR.
-    *
-    * @param[in] grid in which the calculations are done
-    */
-    void set_pressure_bc(Grid &grid);
+    double calculate_dt(Grid &grid, bool energy_eq);
 
     /// x-velocity index based access and modify
     double &u(int i, int j);
@@ -114,6 +106,9 @@ class Fields {
     Matrix<double> _P;
     /// temperature matrix
     Matrix<double> _T;
+    /// Auxiliary temperature
+    /// to store intermediate temp.
+    Matrix<double> _T_new;
     /// x-momentum flux matrix
     Matrix<double> _F;
     /// y-momentum flux matrix

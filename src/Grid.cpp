@@ -2,14 +2,11 @@
 #include "Enums.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <fstream>
 #include <iostream>
-#include <math.h>
 #include <sstream>
 #include <vector>
-
-using namespace std;
+#include <cassert>
 
 Grid::Grid(std::string geom_name, Domain &domain) {
 
@@ -20,23 +17,31 @@ Grid::Grid(std::string geom_name, Domain &domain) {
     if (geom_name.compare("NONE") == 0) {
         std::cout << "Error: Please provide a geometry data file as a .pgm file in the .dat file!. Exiting!\n";
         exit(EXIT_FAILURE);
-    }
+    } 
 
-    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
-                                                std::vector<int>(_domain.domain_size_y + 2, 0));
+    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2, std::vector<int>(_domain.domain_size_y + 2, 0));
+     
     parse_geometry_file(geom_name, geometry_data);
     assign_cell_types(geometry_data);
 }
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
-
+    /*
+        Geometry ID for each cell:
+            FLUID,         ->  0       
+            INFLOW,        ->  1       
+            OUTFLOW,       ->  2       
+            FIXED_WALL,    ->  3-7     
+            MOVING_WALL,   ->  8       
+            FREE_SLIP_WALL ->  9                               
+    */
     int i = 0;
     int j = 0;
 
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
-
+        
         i = 0;
-
+        
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
@@ -51,7 +56,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Outlet
                 _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
                 _outflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) >= 3, geometry_data.at(i_geom).at(j_geom) <= 7) {
+            } else if (geometry_data.at(i_geom).at(j_geom) <= 7) { // Numbers 3-7
                 // Fixed wall
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
@@ -63,7 +68,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
                 _free_slip_cells.push_back(&_cells(i, j));
-            }
+            } 
 
             ++i;
         }
@@ -210,11 +215,38 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             }
         }
     }
+
+    /*******************************************
+     * Terminate if Forbidden cells are present 
+     ******************************************/
+
+    std::vector<int> forbidden_cells;
+
+    for(size_t i; i < _fixed_wall_cells.size(); i++){
+
+        std::vector<border_position> border_positions = _fixed_wall_cells[i]->borders();
+
+        if(border_positions.size() > 2){
+            forbidden_cells.push_back(i);
+        }
+    }
+
+
+    if(forbidden_cells.size() > 0){
+        
+        std::cout << "Error! Forbidden cell found at [" 
+        << _fixed_wall_cells.at(i)->i() << ", " << _fixed_wall_cells.at(i)->j() 
+        << "]. Exiting ... Try converting to fluid cell..." << std::endl;
+
+        exit(EXIT_FAILURE);        
+    }
 }
+
+
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
 
-    int numcols, numrows, depth;
+    size_t numcols, numrows, depth;
 
     std::ifstream infile(filedoc);
     std::stringstream ss;
@@ -236,63 +268,18 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    assert(numrows == geometry_data.size() && "Dimension mismatch: .pgm vs .dat");
-    assert(numcols == geometry_data[0].size() && "Dimension mismatch: .pgm vs .dat");
+    assert(numrows == geometry_data.size());
+    assert(numcols == geometry_data[0].size());
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {
-        for (int row = 0; row < numrows; ++row) {
+        for (size_t row = 0; row < numrows; ++row) {
             ss >> geometry_data[row][col];
         }
     }
 
     infile.close();
 
-    // for (int col = numcols - 1; col > -1; --col) {
-    //         std::cout<<endl;
-    //     for (int row = 0; row < numrows; ++row) {
-    //         std::cout<<geometry_data[row][col];
-    //     }
-    // }
-
-    for (int col = 0; col < numcols; ++col) {
-        std::cout << endl;
-        for (int row = 0; row < numrows; ++row) {
-            std::cout << geometry_data[row][col];
-        }
-    }
-
-    std::cout << endl << "Above is your geometry " << endl << endl;
-
-    int ratio = 2; //this can be implemented as ratio from from the datfile and the pgm file so dat/pgm
-    int numrow2 = int(numrows) * ratio;
-    int numcol2 = int(numcols) * ratio;
-    // int[] rescaled = new int[numrow2*numcol2] ;
-    // int geometry_data_rescaled = [numrow2][numcol2];
-    int geometry_data_rescaled[numrow2][numcol2];
-
-    int px, py;
-    for (int i = 0; i < numrow2; i++) {
-        for (int j = 0; j < numcol2; j++) {
-            px = int(i / ratio);
-            py = int(j / ratio);
-            geometry_data_rescaled[i][j] = geometry_data[px][py];
-        }
-    }
-
-    std::cout << "This is rescaled to  : " << endl << endl;
-    for (int j = 0; j < numcol2; j++) {
-        for (int i = 0; i < numrow2; i++) {
-
-            cout << geometry_data_rescaled[i][j];
-        }
-        cout << endl;
-    }
-
-
-    std::cout << endl << "Above is your rescaled geometry " << endl << endl;
-
-    
 }
 
 int Grid::imax() const { return _domain.size_x; }
@@ -315,7 +302,7 @@ const std::vector<Cell *> &Grid::fixed_wall_cells() const { return _fixed_wall_c
 
 const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall_cells; }
 
-const std::vector<Cell *> &Grid::free_slip_cells() const { return _free_slip_cells; }
+const std::vector<Cell *> &Grid::free_slip_cells() const{ return _free_slip_cells; }
 
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 

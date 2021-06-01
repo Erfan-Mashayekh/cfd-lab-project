@@ -11,6 +11,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _V = Matrix<double>(imax + 2, jmax + 2, VI);
     _P = Matrix<double>(imax + 2, jmax + 2, PI);
     _T = Matrix<double>(imax + 2, jmax + 2, TI);
+    _T_new = Matrix<double>(imax + 2, jmax + 2, 0);
 
     _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
@@ -20,48 +21,35 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 // Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
-
-    if(energy_eq){
-
-        for (int j = 1; j < grid.jmax() + 1; j++) {
-            for (int i = 1; i < grid.imax(); i++) {
-                _F(i, j) = _U(i, j) +
-                           _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) - 
-                           _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
-            }
-        }
-        for (int j = 1; j < grid.jmax(); j++) {
-            for (int i = 1; i < grid.imax() + 1; i++) {
-                _G(i, j) = _V(i, j) +
-                           _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j)) - 
-                           _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1) * _GY;
-            }
-        }        
     
-    } else {
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if(currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID){
+            _F(i, j) = _U(i, j) +
+                _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
+                - int(energy_eq) *  _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
+        }
 
-        for (int j = 1; j < grid.jmax() + 1; j++) {
-            for (int i = 1; i < grid.imax(); i++) {
-                _F(i, j) = _U(i, j) +
-                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j));
-            }
-        }
-        for (int j = 1; j < grid.jmax(); j++) {
-            for (int i = 1; i < grid.imax() + 1; i++) {
-                _G(i, j) = _V(i, j) +
-                       _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j));
-            }
-        }
     }
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if(currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID){
+            _G(i, j) = _V(i, j) +
+                        _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j))
+                        - int(energy_eq) * _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1) * _GY;
+        }                       
+    }        
 }
 
 // calculate right hand side rhs of the pressure eq
 void Fields::calculate_rs(Grid &grid) {
 
-    for (int i = 1; i < grid.imax() + 1; i++) {
-        for (int j = 1; j < grid.jmax() + 1; j++) {
-            _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) * (1 / grid.dx()) + (_G(i, j) - _G(i, j - 1)) * (1 / grid.dy()));
-        }
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _RS(i, j) = (1 / _dt) * ((_F(i, j) - _F(i - 1, j)) * (1 / grid.dx()) + (_G(i, j) - _G(i, j - 1)) * (1 / grid.dy()));
     }
 }
 
@@ -76,84 +64,59 @@ void Fields::calculate_velocities(Grid &grid) {
     double dy = grid.dy();
 
     // Velocity estimation on all fluid cells excluding right wall and top wall
-    for (int i = 1; i < grid.imax(); i++) {
-        for (int j = 1; j < grid.jmax() + 1; j++) {
-            // U (Eq 7)
-            _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
-        }
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
     }
 
-    for (int i = 1; i < grid.imax() + 1; i++) {
-        for (int j = 1; j < grid.jmax(); j++) {
-            // V (Eq 8)
-            _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
-        }
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
     }
 }
 
 // Calculate the velocities at the next time step
 void Fields::calculate_temperature(Grid &grid) {
-
-    Matrix<double> T_new = Matrix<double>(grid.imax() + 2, grid.jmax() + 2, 0);
-
-    for (int i = 1; i < grid.imax() + 1; i++) {
-        for (int j = 1; j < grid.jmax() + 1 ; j++) {
-            // T (Eq 34)
-            T_new(i, j) = _T(i, j) + 
-                          _dt * (_alpha * Discretization::diffusion(_T, i, j) - Discretization::convection_T(_T, _U, _V, i, j));
-        }
+    _T_new = _T;
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _T_new(i, j) = _T(i, j) + 
+                       _dt * (_alpha * Discretization::diffusion(_T, i, j) - Discretization::convection_T(_T, _U, _V, i, j));
     }
+    _T = _T_new;
+}
 
-    for (int i = 1; i < grid.imax() + 1; i++) {
-        for (int j = 1; j < grid.jmax() + 1 ; j++) {
-            _T(i, j) = T_new(i, j);
-        }
-    }
-    // _T.copy(&T_new);
-    
-    // for (int i = 1; i < 10; i++) {
-    //     for (int j = 1; j < 10 ; j++) {
-    //         std::cout << T_new(i, j) << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // for (int i = 1; i < 10; i++) {
-    //     for (int j = 1; j < 10 ; j++) {
-    //         std::cout << _T(i, j) << " ";
-    //     }
-    //     std::cout << "\n";
-    // }    
+static bool abs_compare(const double& a, const double& b)
+{
+    return (std::abs(a) < std::abs(b));
 }
 
 // calculate dt for adaptive time stepping
-double Fields::calculate_dt(Grid &grid) {
+double Fields::calculate_dt(Grid &grid, bool energy_eq) {
 
     double dx = grid.dx();
     double dy = grid.dy();
-    double Umax = 0.0, Vmax = 0.0;
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    for (int j = 1; j < grid.jmax(); j++) {
-        for (int i = 1; i < grid.imax(); i++) {
-            if (abs(_U(i, j)) > Umax) {
-                Umax = abs(_U(i, j));
-            }
-            if (abs(_V(i, j)) > Vmax) {
-                Vmax = abs(_V(i, j));
-            }
-        }
-    }
+    double Umax , Vmax;
+    Umax = std::abs(*std::max_element(_U.container()->begin(), _U.container()->end(), abs_compare));
+    Vmax = std::abs(*std::max_element(_V.container()->begin(), _V.container()->end(), abs_compare));
 
     // Comparing 3 dt for Courant-Friedrichs-Levi (CFL) conditions in order to ensure stability
     // and avoid oscillations
-    // double _dt1 = (0.5/_nu) * pow( (1/pow(grid.dx(),2))+ (1/pow(grid.dy(),2)) , -1 );
-    double _dt1 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu);
-    double _dt2 = grid.dx()/Umax;
-    double _dt3 = grid.dy()/Vmax;
-    double _dt4 = (dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha);
+    std::vector<double> dt;
+    dt.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _nu));
+    dt.push_back(grid.dx()/Umax);
+    dt.push_back(grid.dy()/Vmax);
+    if(energy_eq){
+        dt.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha));
+    }
 
-    _dt =  _tau * std::min(std::min(std::min( _dt1 , _dt2), _dt3), _dt4);
-
+    _dt = _tau * *std::min_element(dt.begin(), dt.end());
+            
     return _dt;
 }
 

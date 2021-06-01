@@ -6,7 +6,7 @@
 SOR::SOR(double omega) : _omega(omega) {}
 
 double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<Boundary>> &boundaries) {
-
+    (void) boundaries;
     double dx = grid.dx();
     double dy = grid.dy();
 
