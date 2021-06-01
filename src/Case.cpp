@@ -9,6 +9,7 @@
 #include <vector>
 #include <cassert>
 #include <regex>
+#include <limits>
 
 namespace filesystem = std::filesystem;
 
@@ -94,6 +95,15 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "alpha") file >> alpha;
                 if (var == "num_walls") file >> num_walls;
 
+                // In the following code,
+                // - var reads the 'wall_vel_x' or 'wall_temp_x'
+                // - regex_search for any one/two digit index
+                // in the string and extracts the digit to idx
+                // - then it checks if the read string contains
+                // 'wal_vel' or 'wall_temp'
+                // - Depending on the type of variable (vel/temp)
+                // the respective value is stored in the map with 
+                // value and the idx 
                 std::string str_vel = "wall_vel";
                 std::string str_temp = "wall_temp";
                 std::regex match_idx("[0-9][0-9]*");
@@ -276,7 +286,7 @@ void Case::simulate() {
         // Initialization of residual and iteration counter
         int it = 0;
         // Set initial tolerance
-        double res = _tolerance + 1.0;        
+        double res =  std::numeric_limits<double>::max();        
         
         while (res > _tolerance){
             
@@ -290,14 +300,10 @@ void Case::simulate() {
             // Increment the iteration counter
             it++;
 
-            // We implement this so that the earlier timestep will have a greater number of iteration for SOR.
-            /*
-            The limit of the timestep that is used here should be changed if the grid or the dt is change. 
-            Here we use 100 for our case because it is already converged below that timestep.
-            */
-
-            if(it > _max_iter && timestep > 100) {
-               std::cout << "WARNING! SOR reached maximum number of pressure iterations."<< std::endl;
+            // Check if SOR didn't converge
+            if(it > _max_iter) {
+               std::cout << "WARNING! SOR reached maximum number of iterations at t = " 
+               << t << ". Residual = " << res << std::endl;
                break;
             }
         }
