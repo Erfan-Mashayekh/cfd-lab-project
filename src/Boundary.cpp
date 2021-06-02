@@ -103,7 +103,6 @@ void FixedWallBoundary::apply(Fields &field){
             field.v(cell->i(), cell->j()) = 0.0;
             field.f(cell->i(), cell->j()) = 0.0;
             field.g(cell->i(), cell->j()) = 0.0;
-            field.p(cell->i(), cell->j()) = 0.0;
             continue; 
         }
 
@@ -111,29 +110,34 @@ void FixedWallBoundary::apply(Fields &field){
         else {
             // Set u, v, f, g
             if(cell->is_border(border_position::RIGHT)){          
-                field.u(cell->i(), cell->j()) = 0.0;
-                field.v(cell->i(), cell->j()) = - field.v(cell->i() + 1, cell->j());
                 field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() + 1, cell->j() - 1);
-                field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+                field.v(cell->i(), cell->j()) = - field.v(cell->i() + 1, cell->j());
             }
-
             if(cell->is_border(border_position::LEFT)){   
-                field.u(cell->i()-1, cell->j()) = 0.0;
                 field.v(cell->i(), cell->j()) = - field.v(cell->i() - 1, cell->j());
                 field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() - 1, cell->j() - 1);
-                field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
             }
-
-            if(cell->is_border(border_position::TOP)){   
-                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() + 1);
+            if(cell->is_border(border_position::TOP)){
                 field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() + 1);
-                field.v(cell->i(), cell->j()) = 0.0;
-                field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() + 1);
             }
-
             if(cell->is_border(border_position::BOTTOM)){   
                 field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() - 1);
                 field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() - 1);
+            }
+            if(cell->is_border(border_position::RIGHT)){          
+                field.u(cell->i(), cell->j()) = 0.0;
+                field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+            }
+            if(cell->is_border(border_position::LEFT)){   
+                field.u(cell->i()-1, cell->j()) = 0.0;
+                field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
+            }
+            if(cell->is_border(border_position::TOP)){
+                field.v(cell->i(), cell->j()) = 0.0;
+                field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+            }
+            if(cell->is_border(border_position::BOTTOM)){   
                 field.v(cell->i(), cell->j()-1) = 0.0;    
                 field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
             }
@@ -210,10 +214,8 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
         if (_wall_temperature[cell->wall_id()] == -1) {
             // Neumann boundary condition
             if (border_pos.size() == 1) {
-
                 field.T(cell->i(), cell->j()) = field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-
-            } else if (border_pos.size() == 2) {
+            } else {
                 for(auto const& b_pos: border_pos){
                     field.T(cell->i(), cell->j()) += 0.5 * field.T(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j());
                 }
@@ -221,10 +223,8 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
         } else {
             // Dirichlet Boundary Condition
             if (border_pos.size() == 1) {
-                field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] - field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());     
-
-            } else if (border_pos.size() == 2) {
-                // NorthEast
+                field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] - field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
+            } else {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] 
                                                 - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j()) 
                                                        + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
