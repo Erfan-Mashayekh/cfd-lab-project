@@ -34,11 +34,13 @@ FreeSlipBoundary::FreeSlipBoundary(std::vector<Cell *> cells) : _cells(cells) {}
 FreeSlipBoundary::FreeSlipBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature)
                 : _cells(cells), _wall_temperature(wall_temperature) {}
 
+
 /**************************************
 *
 *  Overrides for 'apply()' virtual func.
 *
 **************************************/
+
 
 void InflowBoundary::apply(Fields &field){
 
@@ -144,10 +146,9 @@ void FixedWallBoundary::apply(Fields &field){
             // Set pressure
             if(border_pos.size() == 1){
                     field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-            } else { //if (border_pos.size() == 2){
-                for(auto const& b_pos: border_pos){
-                    field.p(cell->i(), cell->j()) += 0.5 * field.p(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j());
-                }
+            } else if (border_pos.size() == 2) {
+                field.p(cell->i(), cell->j()) = 0.5 * (field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
+                                                    +  field.p(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
             }
         }
     }
@@ -181,11 +182,13 @@ void MovingWallBoundary::apply(Fields &field) {
 
 void FreeSlipBoundary::apply(Fields &field) {(void)field;}
 
+
 /***************************************************
 *
 *  Overrides for 'apply_temperature()' virtual func.
 *
 ***************************************************/
+
 
 void InflowBoundary::apply_temperature(Fields &field){
 
@@ -215,16 +218,15 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
             // Neumann boundary condition
             if (border_pos.size() == 1) {
                 field.T(cell->i(), cell->j()) = field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-            } else {
-                for(auto const& b_pos: border_pos){
-                    field.T(cell->i(), cell->j()) += 0.5 * field.T(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j());
-                }
+            } else if (border_pos.size() == 2) {
+                field.T(cell->i(), cell->j()) = 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
+                                                     + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
             }
         } else {
             // Dirichlet Boundary Condition
             if (border_pos.size() == 1) {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] - field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
-            } else {
+            } else if (border_pos.size() == 2) {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] 
                                                 - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j()) 
                                                        + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
