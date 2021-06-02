@@ -72,6 +72,7 @@ void OutflowBoundary::apply(Fields &field){
     for (auto const& cell : _cells) {
         
         std::vector<border_position> border_pos = cell->borders();
+        double sum_pressure = 0;
         int shift_left = 0;
         int shift_down = 0;
         for(auto const& b_pos: border_pos){
@@ -84,12 +85,13 @@ void OutflowBoundary::apply(Fields &field){
             field.v(cell->i(), cell->j() - shift_down) = (b_pos == border_position::TOP || b_pos == border_position::BOTTOM) ? 
                                                          field.v(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j() - shift_down) :
                                                          field.v(cell->i(), cell->j() - shift_down);
+            sum_pressure += field.p(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j());
         }
         // Set F and G (Neumann)
         field.f(cell->i() - shift_left, cell->j()) = field.u(cell->i() - shift_left, cell->j());
         field.g(cell->i(), cell->j() - shift_down) = field.v(cell->i(), cell->j() - shift_down); // Shouldn't we calculate F, G?
-        // Set pressure (Dirichlet)
-        field.p(cell->i(), cell->j()) = _initial_pressure; 
+        // Set pressure (Neumann)
+        field.p(cell->i(), cell->j()) = sum_pressure / border_pos.size();
     }
 }
 
