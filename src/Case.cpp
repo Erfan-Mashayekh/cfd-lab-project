@@ -10,6 +10,7 @@
 #include <cassert>
 #include <regex>
 #include <limits>
+#include <vtkUniformGrid.h>
 
 namespace filesystem = std::filesystem;
 
@@ -434,11 +435,12 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
     domain.imin = 0;
     domain.jmin = 0;
     domain.imax = imax_domain + 2;
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
+    
 }

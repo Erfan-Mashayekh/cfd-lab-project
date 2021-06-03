@@ -110,6 +110,7 @@ class Grid {
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
     std::vector<Cell *> _free_slip_cells;
+    std::vector<Cell *> _ghost_fluid_cells;
 
     Domain _domain;
 

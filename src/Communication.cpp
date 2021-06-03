@@ -23,13 +23,13 @@ static void Communication::communicate(Field field) {
 }
 
 // Find and return the minimum value over all ranks
-double Communication::reduce_min(double value) {
+static double Communication::reduce_min(double value) {
     double reduction_result = 0;
     MPI_Reduce(&my_rank, &reduction_result, 1, MPI_INT, MPI_MIN, root_rank, MPI_COMM_WORLD);
     return reduction_result;
 }
 // Compute total sum over all ranks
-double Communication::reduce_sum(double value) {
+static double Communication::reduce_sum(double value) {
     double sum = 0;
     MPI_Reduce(&my_rank, &sum, 1, MPI_INT, MPI_MIN, root_rank, MPI_COMM_WORLD);
     return sum;
