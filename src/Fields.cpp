@@ -26,8 +26,8 @@ void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
         int j = currentCell->j();
         if(currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID){
             _F(i, j) = _U(i, j) +
-                _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
-                - int(energy_eq) *  _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
+                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
+                       - int(energy_eq) * _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
         }
         if(currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID){
             _G(i, j) = _V(i, j) +

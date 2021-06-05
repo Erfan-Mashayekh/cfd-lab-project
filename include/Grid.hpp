@@ -93,7 +93,12 @@ class Grid {
      */
     const std::vector<Cell *> &free_slip_cells() const;
 
-
+    /**
+     * @brief Access free ghost cells of subdomains
+     *
+     * @param[out] vector of free ghost cells
+     */
+    const std::vector<Cell *> &ghost_cells() const;
 
   private:
 
@@ -110,6 +115,7 @@ class Grid {
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
     std::vector<Cell *> _free_slip_cells;
+    std::vector<Cell *> _ghost_cells;
 
     Domain _domain;
 

@@ -53,6 +53,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     int num_walls;  /* number of walls */
     std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
     std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
+    int iproc;       /* number of subdomains in x direction */
+    int jproc;       /* number of subdomains in y direction */
 
     if (file.is_open()) {
 
@@ -94,6 +96,8 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "beta") file >> beta;
                 if (var == "alpha") file >> alpha;
                 if (var == "num_walls") file >> num_walls;
+                if (var == "iproc") file >> iproc;
+                if (var == "jproc") file >> jproc;
 
                 // In the following code,
                 // - var reads the 'wall_vel_x' or 'wall_temp_x'
@@ -133,7 +137,10 @@ Case::Case(std::string file_name, int argn, char **args) {
     domain.domain_size_x = imax;
     domain.domain_size_y = jmax;
 
-    build_domain(domain, imax, jmax);
+    _communication = Communication(iproc, jproc);
+    int rank = _communication.init_parallel(argn, args);
+
+    build_domain(domain, imax, jmax, iproc, jproc, rank);
 
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, GX, GY);
@@ -294,7 +301,7 @@ void Case::simulate() {
             // TODO: Set pressure Neumann Boundary Conditions
             //_field.set_pressure_bc(_grid);
             
-            // Perform SOR Solver and retrieve esidual for the loop continuity
+            // Perform SOR Solver and retrieve residual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
 
             // Increment the iteration counter
@@ -434,11 +441,19 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
-    domain.imin = 0;
-    domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int rank) {
+    for (int col = 0; col < iproc; col++){
+        for (int row = 0; row < jproc; row++){    
+            domain.imin = 0;
+            domain.jmin = 0;
+            domain.imax = int(imax_domain/iproc) + 2;
+            domain.jmax = int(jmax_domain/jproc) + 2;
+            domain.size_x = int(imax_domain/iproc);
+            domain.size_y = int(jmax_domain/jproc);
+
+            domain.row = row;
+            domain.col = col;
+            domain.rank = rank;
+        }
+    }
 }
