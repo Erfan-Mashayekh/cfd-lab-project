@@ -20,6 +20,7 @@ namespace filesystem = std::filesystem;
 #include <vtkSmartPointer.h>
 #include <vtkStructuredGrid.h>
 #include <vtkStructuredGridWriter.h>
+#include <vtkUniformGrid.h>
 #include <vtkTuple.h>
 
 Case::Case(std::string file_name, int argn, char **args) {
@@ -434,11 +435,12 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
     domain.imin = 0;
     domain.jmin = 0;
     domain.imax = imax_domain + 2;
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
+    
 }

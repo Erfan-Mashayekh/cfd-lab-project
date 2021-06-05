@@ -21,6 +21,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 // Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
+
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
         int j = currentCell->j();
@@ -65,6 +66,7 @@ void Fields::calculate_velocities(Grid &grid) {
         _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
     }
 }
+
 
 // Calculate the velocities at the next time step
 void Fields::calculate_temperature(Grid &grid) {

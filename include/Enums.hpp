@@ -21,5 +21,6 @@ enum class cell_type {  /** PGM INDEX **/
     FIXED_WALL,         /*     3-7     */
     MOVING_WALL,        /*     8       */
     FREE_SLIP_WALL,     /*     9       */
+    FLUID_GHOST_CELL,   /*     10       */
     DEFAULT             /*             */
 };                      /***************/
