@@ -6,16 +6,10 @@
 
 int main(int argn, char **args) {
 
-    // Initialize MPI
-    MPI_Init(&argn, &args);
-
-    // Get the size of the default communicator
     int comm_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-
-    // Get my process id (rank) in this communicator
     int my_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    Communication::init_parallel(argn, args, my_rank, comm_size);
 
     if (argn > 1) {
         std::string file_name{args[1]};
@@ -31,8 +25,5 @@ int main(int argn, char **args) {
 
     // problem.simulate();
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // Finalize MPI: Wait until all ranks are here to safely exit
-    MPI_Finalize();
+    Communication::finalize();
 }

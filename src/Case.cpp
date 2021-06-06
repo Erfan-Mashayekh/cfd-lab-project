@@ -27,7 +27,7 @@ namespace filesystem = std::filesystem;
 #include <vtkTuple.h>
 
 
-Case::Case(std::string file_name, int comm_size, int my_rank) { 
+Case::Case(std::string file_name, const int& comm_size, const int& my_rank) { 
 
     Parameters input; 
 
@@ -430,7 +430,7 @@ void Case::simulate() {
 
 }
 
-void Case::output_vtk(int timestep, int my_rank) {
+void Case::output_vtk(int timestep, const int& my_rank) {
     // Create a new structured grid
     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
@@ -525,7 +525,7 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int my_rank) {
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, const int& my_rank) {
 
     int max_partition_size_x = std::floor(imax_domain / iproc) + 1;
     int max_partition_size_y = std::floor(jmax_domain / jproc) + 1;
@@ -547,9 +547,6 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
     } else {
         domain.size_y = max_partition_size_y;
     }
-
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
 
     domain.imin = 0;
     domain.jmin = 0;

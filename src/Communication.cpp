@@ -6,24 +6,25 @@ Communication::Communication(int imax, int jmax, int iproc,  int jproc)
               :_imax(imax), _jmax(jmax), _iproc(iproc), _jproc(jproc){}
 
 // Initialize communication
-int Communication::init_parallel(int argn, char** args){
-
-    int size, rank;
+void Communication::init_parallel(int argn, char** args, int &my_rank, int &comm_size){
 
     // start MPI
     MPI_Init(&argn, &args);
 
     // Fetch number of processes
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
 
     // Fetch process id (rank) in this communicator
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    return rank;
 }
 
 // Finalize communication
-void Communication::finalize() { MPI_Finalize(); }
+void Communication::finalize() { 
+    // Finalize MPI: Wait until all ranks are here to safely exit
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize(); 
+}
 
 // Send/Receive the data using this communicator
 void Communication::communicate(const Domain domain, Matrix<double> &field) {
