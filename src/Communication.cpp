@@ -26,7 +26,7 @@ int Communication::init_parallel(int argn, char** args){
 void Communication::finalize() { MPI_Finalize(); }
 
 // Send/Receive the data using this communicator
-void Communication::communicate(const Domain domain, Matrix<double> &field) {
+void Communication::communicate(const Domain &domain, Matrix<double> &field) {
     
     // Send to right subdomain
     if (domain.col < _iproc){
@@ -40,14 +40,16 @@ void Communication::communicate(const Domain domain, Matrix<double> &field) {
 
         // receiver
         int dest = domain.rank(domain.row, domain.col + 1);
-        void *recvbuf = field.get_col(0).data();
+        void *recvbuf = field.get_col(0).size();
+        void *recvbuf;
+        int recvcount = field.get_col(0).size();
         int recvcount = field.get_col(0).size();
         MPI_Datatype recvtype = MPI_DOUBLE;
         int recvtag = 1;
         MPI_Comm comm = MPI_COMM_WORLD;
         MPI_Status *status = MPI_STATUS_IGNORE;
 
-        MPI_Sendrecv(sendbuf, sendcount, sendtype,   dest, sendtag, recvbuf, recvcount, recvtype, source, recvtag, comm, status);
+        MPI_Sendrecv(sendbuf, sendcount, sendtype, dest, sendtag, recvbuf, recvcount, recvtype, source, recvtag, comm, status);
     }
 
     // Send to Left subdomain
@@ -101,15 +103,15 @@ void Communication::communicate(const Domain domain, Matrix<double> &field) {
         const void* sendbuf = field.get_row(1).data();
         int sendcount = field.get_row(1).size();
         MPI_Datatype sendtype = MPI_DOUBLE;
-        int sendtag = 1;
-        int source = domain.rank(domain.row - 1, domain.col);
+        int sendtag = 4;
+        int source = domain.rank(domain.row, domain.col);
 
         // receiver
-        int dest = domain.rank(domain.row, domain.col - 1);
+        int dest = domain.rank(domain.row - 1, domain.col);
         void *recvbuf = field.get_row(_jmax).data();
         int recvcount = field.get_row(_jmax).size();
         MPI_Datatype recvtype = MPI_DOUBLE;
-        int recvtag = 1;
+        int recvtag = 4;
         MPI_Comm comm = MPI_COMM_WORLD;
         MPI_Status *status = MPI_STATUS_IGNORE;
 
@@ -126,8 +128,32 @@ void Communication::communicate(const Domain domain, Matrix<double> &field) {
 // }
 
 // // Compute total sum over all ranks
-// static double Communication::reduce_sum(double value) {
-//     double sum = 0;
-//     MPI_Reduce(&my_rank, &sum, 1, MPI_INT, MPI_MIN, root_rank, MPI_COMM_WORLD);
+// double Communication::reduce_sum(const Domain &domain, double &value) {
+
+//     sum_loc = 0;
+
+// 	sum_loc += value;
+    
+
+//     /* accumulate global sum (across processes) */
+
+//     MPI_Reduce(
+//         &sum_loc,       /* send buffer */
+//         &sum,           /* receive buffer (result on rank=0, see below) */
+//         1,              /* send count */
+//         MPI_INT,        /* data type */
+//         MPI_SUM,        /* reduce operation type */
+//         0,              /* result on rank=0 process */
+//         MPI_COMM_WORLD  /* communicator */
+//         );
+
+//     /* note that only rank=0 has the final (correct) result */
+
+//     if (rank == 0) {
+//        printf("rank=%d  result=%d\n",rank,sum);
+//     }
+
+
 //     return sum;
+
 // }

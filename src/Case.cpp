@@ -286,9 +286,12 @@ void Case::simulate() {
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
+        _communication.communicate(_grid.domain(), _field.f_matrix());
+        _communication.communicate(_grid.domain(), _field.g_matrix());
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
+        _communication.communicate(_grid.domain(), _field.rs_matrix());
 
         // SOR Loop
         // Initialization of residual and iteration counter
@@ -304,6 +307,8 @@ void Case::simulate() {
             
             // Perform SOR Solver and retrieve residual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
+            _communication.communicate(_grid.domain(), _field.p_matrix());
+            
 
             // Increment the iteration counter
             it++;
