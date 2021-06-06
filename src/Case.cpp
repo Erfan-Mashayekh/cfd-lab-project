@@ -203,7 +203,7 @@ Case::Case(std::string file_name, const int& comm_size, const int& my_rank) {
     _t_end = input.t_end;
     _energy_eq = input.energy_eq;
 
-    // _communication = Communication(imax, jmax, iproc, jproc);
+    _communication = Communication(input.imax, input.jmax, input.iproc, input.jproc);
 
     std::map<int, double> wall_vel;   
     std::map<int, double> wall_temp; 
@@ -224,7 +224,7 @@ Case::Case(std::string file_name, const int& comm_size, const int& my_rank) {
 
     build_domain(domain, input.imax, input.jmax, input.iproc, input.jproc, my_rank);
 
-    _grid = Grid(_geom_name, domain);
+    _grid = Grid(_geom_name, domain, my_rank, input.iproc, input.jproc);
     _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y, 
                     input.UI, input.VI, input.PI, input.TI, input.alpha, input.beta, input.GX, input.GY);
 
@@ -364,17 +364,13 @@ void Case::simulate() {
                 boundary->apply_temperature(_field);
             }
             _field.calculate_temperature(_grid);
-            _communication.communicate(_grid.domain(), _field.T_matrix());
         }
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
-        _communication.communicate(_grid.domain(), _field.f_matrix());
-        _communication.communicate(_grid.domain(), _field.g_matrix());
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
-        _communication.communicate(_grid.domain(), _field.rs_matrix());
 
         // SOR Loop
         // Initialization of residual and iteration counter
@@ -390,9 +386,7 @@ void Case::simulate() {
             
             // Perform SOR Solver and retrieve residual for the loop continuity
             res = _pressure_solver->solve(_field, _grid, _boundaries);
-            _communication.communicate(_grid.domain(), _field.p_matrix());
             
-
             // Increment the iteration counter
             it++;
 

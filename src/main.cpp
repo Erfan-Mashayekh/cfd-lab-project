@@ -3,6 +3,7 @@
 #include <mpi.h>
 
 #include "Case.hpp"
+#include "Communication.hpp"
 
 int main(int argn, char **args) {
 

@@ -29,7 +29,7 @@ class Grid {
      * @param[in] cell size in y direction
      *
      */
-    Grid(std::string geom_name, Domain &domain);
+    Grid(std::string geom_name, Domain &domain, const int& my_rank, int &iproc, int &jproc);
 
     /// index based cell access
     Cell cell(int i, int j) const;
@@ -103,9 +103,9 @@ class Grid {
   private:
 
     /// Build cell data structures with given geometrical data
-    void assign_cell_types(std::vector<std::vector<int>> &geometry_data);
+    void assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int &iproc, int &jproc);
     /// Extract geometry from pgm file and create geometrical data
-    void parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data);
+    void parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data);
 
     Matrix<Cell> _cells;
 

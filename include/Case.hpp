@@ -88,8 +88,8 @@ class Case {
      *
      * @param[in] Timestep of the solution
      */
-    void output_vtk(int t, int my_rank = 0);
-
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int my_rank = 0);
+    void output_vtk(int timestep, const int& my_rank);
+    
+    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, const int& my_rank);
 
 };
