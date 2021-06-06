@@ -38,5 +38,5 @@ struct Domain {
     /// column of the subdomain
     int col{-1};
     /// rank of the process allocated for the domain
-    int rank{-1};
+    Matrix<int> rank;
 };

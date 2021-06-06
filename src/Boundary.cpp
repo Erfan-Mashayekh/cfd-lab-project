@@ -109,7 +109,6 @@ void FixedWallBoundary::apply(Fields &field){
             field.g(cell->i(), cell->j()) = 0.0;
             continue; 
         }
-
         // Set boudndary conditions when there is only one boundary cell
         else {
             // Set u, v, f, g

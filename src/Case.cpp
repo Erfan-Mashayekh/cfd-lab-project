@@ -137,7 +137,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     domain.domain_size_x = imax;
     domain.domain_size_y = jmax;
 
-    _communication = Communication(iproc, jproc);
+    _communication = Communication(imax, jmax, iproc, jproc);
     int rank = _communication.init_parallel(argn, args);
 
     build_domain(domain, imax, jmax, iproc, jproc, rank);
@@ -281,6 +281,7 @@ void Case::simulate() {
                 boundary->apply_temperature(_field);
             }
             _field.calculate_temperature(_grid);
+            _communication.communicate(_grid.domain(), _field.T_matrix());
         }
 
         // Calculate Fn and Gn
@@ -442,6 +443,9 @@ void Case::output_vtk(int timestep, int my_rank) {
 }
 
 void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int rank) {
+    
+    domain.rank = Matrix<int>(jproc, iproc, 0);
+
     for (int col = 0; col < iproc; col++){
         for (int row = 0; row < jproc; row++){    
             domain.imin = 0;
@@ -453,7 +457,7 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
 
             domain.row = row;
             domain.col = col;
-            domain.rank = rank;
+            domain.rank(row, col) = rank;
         }
     }
 }
