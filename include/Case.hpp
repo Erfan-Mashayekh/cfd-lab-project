@@ -10,6 +10,7 @@
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "PressureSolver.hpp"
+#include "Communication.hpp"
 
 /**
  * @brief Class to hold and orchestrate the simulation flow.
@@ -60,6 +61,7 @@ class Case {
     Discretization _discretization;
     std::unique_ptr<PressureSolver> _pressure_solver;
     std::vector<std::unique_ptr<Boundary>> _boundaries;
+    Communication _communication;
 
     /// Solver convergence tolerance
     double _tolerance;
@@ -88,5 +90,6 @@ class Case {
      */
     void output_vtk(int t, int my_rank = 0);
 
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int my_rank = 0);
+    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int my_rank = 0);
+
 };

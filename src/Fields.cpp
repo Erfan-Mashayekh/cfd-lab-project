@@ -27,8 +27,8 @@ void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
         int j = currentCell->j();
         if(currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID){
             _F(i, j) = _U(i, j) +
-                _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
-                - int(energy_eq) *  _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
+                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
+                       - int(energy_eq) * _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
         }
         if(currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID){
             _G(i, j) = _V(i, j) +
@@ -119,6 +119,13 @@ double &Fields::f(int i, int j) { return _F(i, j); }
 double &Fields::g(int i, int j) { return _G(i, j); }
 double &Fields::rs(int i, int j) { return _RS(i, j); }
 
+Matrix<double> &Fields::u_matrix() { return _U; }
+Matrix<double> &Fields::v_matrix() { return _V; }
 Matrix<double> &Fields::p_matrix() { return _P; }
+Matrix<double> &Fields::T_matrix() { return _T; }
+Matrix<double> &Fields::f_matrix() { return _F; }
+Matrix<double> &Fields::g_matrix() { return _G; }
+Matrix<double> &Fields::rs_matrix() { return _RS;}
+
 
 double Fields::dt() const { return _dt; }

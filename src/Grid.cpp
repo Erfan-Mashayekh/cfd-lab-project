@@ -37,12 +37,17 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     */
     int i = 0;
     int j = 0;
+    int i_geom;
+    int j_geom;
 
-    for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
+    for (int j_geom_domain = _domain.jmin; j_geom_domain < _domain.jmax; ++j_geom_domain) {
         
         i = 0;
-        
-        for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
+
+        for (int i_geom_domain = _domain.imin; i_geom_domain < _domain.imax; ++i_geom_domain) {
+            // Shift each subdomain to its correct place in a parallel computation
+            j_geom = j_geom_domain + _domain.jmax * _domain.row;
+            i_geom = i_geom_domain + _domain.imax * _domain.col;
 
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 // Fluid
@@ -93,6 +98,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::RIGHT);
     }
+    // Subdomain Ghost cell in parallel computation (Bottom-Left Corner cell)
+    if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID &&
+        _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {            
+        _cells(i, j) = Cell(i, j, cell_type::GHOST);
+        _ghost_cells.push_back(&_cells(i, j));
+    }   
+
     // Top-Left Corner
     i = 0;
     j = _domain.size_y + 1;
@@ -104,6 +116,12 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::RIGHT);
     }
+    // Subdomain Ghost cell in parallel computation (Top-Left Corner cell)
+    if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID &&
+        _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {            
+        _cells(i, j) = Cell(i, j, cell_type::GHOST);
+        _ghost_cells.push_back(&_cells(i, j));
+    }    
 
     // Top-Right Corner
     i = _domain.size_x + 1;
@@ -116,6 +134,12 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::LEFT);
     }
+    // Subdomain Ghost cell in parallel computation (Top-Right Corner cell)
+    if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID &&
+        _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {            
+        _cells(i, j) = Cell(i, j, cell_type::GHOST);
+        _ghost_cells.push_back(&_cells(i, j));
+    }  
 
     // Bottom-Right Corner
     i = Grid::_domain.size_x + 1;
@@ -128,6 +152,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::LEFT);
     }
+    // Subdomain Ghost cell in parallel computation (Bottom-Right Corner cell)
+    if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID &&
+        _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {            
+        _cells(i, j) = Cell(i, j, cell_type::GHOST);
+        _ghost_cells.push_back(&_cells(i, j));
+    }  
+
     // Bottom cells
     j = 0;
     for (int i = 1; i < _domain.size_x + 1; ++i) {
@@ -142,6 +173,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::TOP);
+        }
+        // Subdomain Ghost cell in parallel computation (Bottom cell)
+        if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {            
+            _cells(i, j) = Cell(i, j, cell_type::GHOST);
+            _ghost_cells.push_back(&_cells(i, j));
         }
     }
 
@@ -161,6 +199,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::BOTTOM);
         }
+        // Subdomain Ghost cell in parallel computation (Top cell)
+        if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {            
+            _cells(i, j) = Cell(i, j, cell_type::GHOST);
+            _ghost_cells.push_back(&_cells(i, j));
+        }
     }
 
     // Left Cells
@@ -178,6 +223,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::TOP);
         }
+        // Subdomain Ghost cell in parallel computation (Left cell)
+        if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {            
+            _cells(i, j) = Cell(i, j, cell_type::GHOST);
+            _ghost_cells.push_back(&_cells(i, j));
+        }        
     }
     // Right Cells
     i = Grid::_domain.size_x + 1;
@@ -194,6 +246,13 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::TOP);
         }
+        // Subdomain Ghost cell in parallel computation (Right cell)
+        if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID &&
+            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {            
+            _cells(i, j) = Cell(i, j, cell_type::GHOST);
+            _ghost_cells.push_back(&_cells(i, j));
+        }         
     }
 
     // Inner cells
@@ -281,7 +340,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
         for (size_t row = 0; row < numrows; ++row) {
             ss >> geometry_data[row][col];
         }
-    }
+    } 
 
     infile.close();
 
@@ -312,3 +371,5 @@ const std::vector<Cell *> &Grid::free_slip_cells() const{ return _free_slip_cell
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
+
+const std::vector<Cell *> &Grid::ghost_cells() const { return _ghost_cells; }

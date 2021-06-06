@@ -198,9 +198,12 @@ Case::Case(std::string file_name, int comm_size, int my_rank) {
     // Broadcast information to all processes in the communicator
     MPI_Bcast(&input, 1, mpi_param_type, 0, MPI_COMM_WORLD);
 
+
     _output_freq = input.output_freq;
     _t_end = input.t_end;
     _energy_eq = input.energy_eq;
+
+    // _communication = Communication(imax, jmax, iproc, jproc);
 
     std::map<int, double> wall_vel;   
     std::map<int, double> wall_temp; 
@@ -209,7 +212,6 @@ Case::Case(std::string file_name, int comm_size, int my_rank) {
         if(input.wall_idx[i] != -1){
             wall_vel.insert( std::pair<int, double>( input.wall_idx[i], input.wall_vel[i] ) );
             wall_temp.insert( std::pair<int, double>( input.wall_idx[i], input.wall_temp[i] ) );
-            std::cout << "My rank = " << my_rank << ". Value of wall_temp   = " << input.wall_idx[i] << ":::" << input.wall_temp[i]   << std::endl;
         }
     }
 
@@ -231,44 +233,44 @@ Case::Case(std::string file_name, int comm_size, int my_rank) {
     _max_iter = input.itermax;
     _tolerance = input.eps;
 
-    // // Construct boundaries
-    // // Inflow
-    // if (not _grid.inflow_cells().empty()) {
-    //     if(_energy_eq){
-    //         _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN, input.TIN));
-    //     } else {
-    //         _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN));
-    //     }
-    // }
-    // // Outflow
-    // if (not _grid.outflow_cells().empty()) {
-    //     _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), input.PI));
-    // }
+    // Construct boundaries
+    // Inflow
+    if (not _grid.inflow_cells().empty()) {
+        if(_energy_eq){
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN, input.TIN));
+        } else {
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN));
+        }
+    }
+    // Outflow
+    if (not _grid.outflow_cells().empty()) {
+        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), input.PI));
+    }
 
-    // // Fixed wall
-    // if (not _grid.fixed_wall_cells().empty()) {
-    //     if(_energy_eq){
-    //         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
-    //     } else {
-    //         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
-    //     }
-    // }
-    // // Moving wall
-    // if (not _grid.moving_wall_cells().empty()) {
-    //     if(_energy_eq){
-    //         _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
-    //     } else {
-    //         _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
-    //     }
-    // }
-    // // Free slip
-    // if (not _grid.free_slip_cells().empty()) {
-    //     if(_energy_eq){
-    //         _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
-    //     } else {
-    //         _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
-    //     } 
-    // }
+    // Fixed wall
+    if (not _grid.fixed_wall_cells().empty()) {
+        if(_energy_eq){
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        }
+    }
+    // Moving wall
+    if (not _grid.moving_wall_cells().empty()) {
+        if(_energy_eq){
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
+        }
+    }
+    // Free slip
+    if (not _grid.free_slip_cells().empty()) {
+        if(_energy_eq){
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
+        } else {
+            _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
+        } 
+    }
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -362,6 +364,7 @@ void Case::simulate() {
                 boundary->apply_temperature(_field);
             }
             _field.calculate_temperature(_grid);
+            _communication.communicate(_grid.domain(), _field.T_matrix());
         }
 
         // Calculate Fn and Gn

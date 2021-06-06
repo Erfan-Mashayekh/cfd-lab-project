@@ -94,8 +94,28 @@ class Fields {
     /// get timestep size
     double dt() const;
 
+    /// x-velocity matrix access and modify
+    Matrix<double> &u_matrix();
+
+    /// y-velocity matrix access and modify
+    Matrix<double> &v_matrix();
+
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
+
+    /// temperature matrix access and modify
+    Matrix<double> &T_matrix();
+
+    /// x-momentum flux matrix access and modify
+    Matrix<double> &f_matrix();
+
+    /// y-momentum flux matrix access and modify
+    Matrix<double> &g_matrix();
+
+    /// RHS matrix access and modify
+    Matrix<double> &rs_matrix();
+
+
 
   private:
     /// x-velocity matrix
