@@ -25,7 +25,7 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, int argn, char **args);
+    Case(std::string file_name, int comm_size, int my_rank);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -88,5 +88,5 @@ class Case {
      */
     void output_vtk(int t, int my_rank = 0);
 
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain);
+    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int my_rank = 0);
 };

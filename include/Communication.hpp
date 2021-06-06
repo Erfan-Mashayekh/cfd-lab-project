@@ -1,19 +1,18 @@
-#pragma once
+// #pragma once
 
-#include <memory>
-#include <string>
-#include <vector>
+// #include <memory>
+// #include <string>
+// #include <vector>
 
-#include "Field.hpp" 
+// #include "Fields.hpp" 
 
-class Case {
-    private:
-        int my_rank;
+// class Communication {
+//     public:
+//         Communication(int rank); //iprod and jproc is the number of process per y or x
+//         static void init_parallel(int processers, int _size, int my_rank);
+//         static void finalize();
+//         static void communicate(Fields &field);
+//         static double reduce_min(double value);
+//         static double reduce_sum(double value);
 
-    public:
-        Communication(int rank, double jproc, double iproc); //iprod and jproc is the number of process per y or x
-        static void init_parallel(int processers);
-        static void finalize();
-        static void communicate(Field &field);
-        static double reduce_min(double value);
-
+// };
