@@ -27,7 +27,8 @@ namespace filesystem = std::filesystem;
 #include <vtkTuple.h>
 
 
-Case::Case(std::string file_name, const int& comm_size, const int& my_rank) { 
+Case::Case(std::string file_name, int& my_rank, int &comm_size)
+     : _comm_size(comm_size), _my_rank(my_rank) { 
 
     Parameters input; 
 
@@ -90,7 +91,7 @@ Case::Case(std::string file_name, const int& comm_size, const int& my_rank) {
     /****************************
      * Rank 0 reads the file
      * *************************/
-    if(my_rank == 0){
+    if(_my_rank == 0){
         // Read input parameters
         const int MAX_LINE_LENGTH = 1024;
         std::ifstream file(file_name);
@@ -222,9 +223,9 @@ Case::Case(std::string file_name, const int& comm_size, const int& my_rank) {
     domain.domain_size_x = input.imax;
     domain.domain_size_y = input.jmax;
 
-    build_domain(domain, input.imax, input.jmax, input.iproc, input.jproc, my_rank);
+    build_domain(domain, input.imax, input.jmax, input.iproc, input.jproc);
 
-    _grid = Grid(_geom_name, domain, my_rank, input.iproc, input.jproc);
+    _grid = Grid(_geom_name, domain, _my_rank, input.iproc, input.jproc);
     _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y, 
                     input.UI, input.VI, input.PI, input.TI, input.alpha, input.beta, input.GX, input.GY);
 
@@ -347,7 +348,8 @@ void Case::simulate() {
 
     // initialization
     double t = 0.0;
-    double dt = _field.dt();
+    double dt_sub = _field.dt();
+    double = dt;
     int timestep = 0;
     double step = 0;
     // time loop
@@ -364,10 +366,13 @@ void Case::simulate() {
                 boundary->apply_temperature(_field);
             }
             _field.calculate_temperature(_grid);
+            _communication.communicate(_field.T_matrix(), _my_rank);
         }
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
+        _communication.communicate(_field.f_matrix(), _my_rank);
+        _communication.communicate(_field.g_matrix(), _my_rank);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
@@ -376,8 +381,9 @@ void Case::simulate() {
         // Initialization of residual and iteration counter
         int it = 0;
         // Set initial tolerance
-        double res =  std::numeric_limits<double>::max();        
-        
+        double res_sub =  std::numeric_limits<double>::max();  
+        double res =  std::numeric_limits<double>::max();  
+
         while (res > _tolerance){
             
           
@@ -385,8 +391,13 @@ void Case::simulate() {
             //_field.set_pressure_bc(_grid);
             
             // Perform SOR Solver and retrieve residual for the loop continuity
-            res = _pressure_solver->solve(_field, _grid, _boundaries);
+            res_sub = _pressure_solver->solve(_field, _grid, _boundaries);
             
+            _communication.communicate(_field.p_matrix(), _my_rank);
+            MPI_Barrier(MPI_COMM_WORLD);
+            res = _communication.reduce_sum(res_sub);
+
+
             // Increment the iteration counter
             it++;
 
@@ -401,6 +412,8 @@ void Case::simulate() {
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
+        _communication.communicate(_field.u_matrix(), _my_rank);
+        _communication.communicate(_field.v_matrix(), _my_rank);
 
         // Calculate new time
         t = t + dt;
@@ -409,27 +422,28 @@ void Case::simulate() {
         timestep++;
 
         // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid, _energy_eq);
-
+        dt_sub = _field.calculate_dt(_grid, _energy_eq);
+        MPI_Barrier(MPI_COMM_WORLD);
+        dt = _communication.reduce_min(dt_sub);
 
         // Output the vtk every 1s
         if (t >= step + _output_freq) {
             step = step + _output_freq;
             std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
-            output_vtk(step, 0);
+            output_vtk(step);
         }
      
     }
 
     // Output the final VTK file
-    output_vtk(step, 0);
+    output_vtk(step);
 
     // End message
     std::cout << "Done!\n";
 
 }
 
-void Case::output_vtk(int timestep, const int& my_rank) {
+void Case::output_vtk(int timestep) {
     // Create a new structured grid
     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
@@ -516,7 +530,7 @@ void Case::output_vtk(int timestep, const int& my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "" + std::to_string(_my_rank) + "." + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
@@ -524,7 +538,7 @@ void Case::output_vtk(int timestep, const int& my_rank) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, const int& my_rank) {
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
 
     int max_partition_size_x = std::floor(imax_domain / iproc) + 1;
     int max_partition_size_y = std::floor(jmax_domain / jproc) + 1;
@@ -532,8 +546,8 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
     int residual_partition_size_x = imax_domain - max_partition_size_x * (iproc - 1);
     int residual_partition_size_y = jmax_domain - max_partition_size_y * (jproc - 1);
 
-    int partition_idx_x = my_rank % iproc;
-    int partition_idx_y = std::floor(my_rank / iproc);
+    int partition_idx_x = _my_rank % iproc;
+    int partition_idx_y = std::floor(_my_rank / iproc);
 
     if(partition_idx_x == iproc - 1){
         domain.size_x = residual_partition_size_x;

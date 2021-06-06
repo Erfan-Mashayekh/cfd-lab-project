@@ -14,9 +14,9 @@ class Communication {
         // Communication(int rank, double jproc, double iproc); //iprod and jproc is the number of process per y or x
         void init_parallel(int argn, char** args, int &my_rank, int &comm_size);
         void finalize();
-        void communicate(const Domain domain, Matrix<double> &field, int &my_rank, int &comm_size) ;
-        static double reduce_sum(const Domain &domain, double &value);
-        static double reduce_min(double value);
+        void communicate(Matrix<double> &field, const int &my_rank) ;
+        double reduce_sum(double &value);
+        double reduce_min(double &value);
 
     private:
         Matrix<Domain> _subdomain;

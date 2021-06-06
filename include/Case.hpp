@@ -26,7 +26,7 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, const int& comm_size, const int& my_rank);
+    Case(std::string file_name, int& my_rank, int& comm_size);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -55,6 +55,10 @@ class Case {
     double _output_freq;
     /// If energy equation is turned on 
     bool _energy_eq = false; 
+    /// Rank of the processes
+    int _my_rank;
+    /// The number of the processes
+    int _comm_size;
 
     Fields _field;
     Grid _grid;
@@ -88,8 +92,8 @@ class Case {
      *
      * @param[in] Timestep of the solution
      */
-    void output_vtk(int timestep, const int& my_rank);
+    void output_vtk(int timestep);
     
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, const int& my_rank);
+    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc);
 
 };
