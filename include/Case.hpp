@@ -26,7 +26,7 @@ class Case {
      *
      * @param[in] Input file name
      */
-    Case(std::string file_name, int argn, char **args);
+    Case(std::string file_name, const int& comm_size, const int& my_rank);
 
     /**
      * @brief Main function to simulate the flow until the end time.
@@ -90,7 +90,6 @@ class Case {
      */
     void output_vtk(int t, int my_rank = 0);
 
-    // overrides if the subdomain is created
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int rank);
-    void build_domain(Matrix<Domain> &subdomain, int imax_domain, int jmax_domain, int iproc, int jproc);
+    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc, int my_rank = 0);
+
 };

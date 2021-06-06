@@ -8,7 +8,7 @@
 #include <vector>
 #include <cassert>
 
-Grid::Grid(std::string geom_name, Domain &domain) {
+Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank) {
 
     _domain = domain;
 
@@ -19,13 +19,18 @@ Grid::Grid(std::string geom_name, Domain &domain) {
         exit(EXIT_FAILURE);
     } 
 
-    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2, std::vector<int>(_domain.domain_size_y + 2, 0));
-     
-    parse_geometry_file(geom_name, geometry_data);
-    assign_cell_types(geometry_data);
+    geometry_data = Matrix<int>(_domain.domain_size_x + 2, _domain.domain_size_y + 2, 0);
+    
+    if(my_rank == 0){
+        parse_geometry_file(geom_name, geometry_data);
+    }
+
+    MPI_Bcast(geometry_data.data(), ((_domain.domain_size_x + 2) * (_domain.domain_size_y + 2)) , MPI::INT, 0, MPI_COMM_WORLD);
+
+    assign_cell_types(geometry_data, my_rank);
 }
 
-void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
+void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     /*
         Geometry ID for each cell:
             FLUID,         ->  0       
@@ -53,6 +58,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Fluid
                 _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data.at(i_geom).at(j_geom));
                 _fluid_cells.push_back(&_cells(i, j));
+                
             } else if (geometry_data.at(i_geom).at(j_geom) == 1) {
                 // Inlet
                 _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data.at(i_geom).at(j_geom));
@@ -73,6 +79,10 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
                 _free_slip_cells.push_back(&_cells(i, j));
+            } else if (geometry_data.at(i_geom).at(j_geom) == 10) {
+                // Ghost Fluid Cell
+                _cells(i, j) = Cell(i, j, cell_type::FLUID_GHOST_CELL, geometry_data.at(i_geom).at(j_geom));
+                _ghost_fluid_cells.push_back(&_cells(i, j));
             } 
 
             ++i;
@@ -303,7 +313,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
 
 
-void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
+void Grid::parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data) {
 
     size_t numcols, numrows, depth;
 
@@ -327,13 +337,12 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    assert(numrows == geometry_data.size());
-    assert(numcols == geometry_data[0].size());
+    assert(numrows * numcols == geometry_data.size());
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {
         for (size_t row = 0; row < numrows; ++row) {
-            ss >> geometry_data[row][col];
+            ss >> geometry_data(row, col);
         }
     } 
 

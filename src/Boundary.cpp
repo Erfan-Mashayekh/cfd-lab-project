@@ -1,6 +1,7 @@
 #include "Boundary.hpp"
 #include <cmath>
 #include <iostream>
+#include <cassert>
 
 
 /***************************************
@@ -146,10 +147,12 @@ void FixedWallBoundary::apply(Fields &field){
             }
             // Set pressure
             if(border_pos.size() == 1){
-                    field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
+                field.p(cell->i(), cell->j()) = field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
             } else if (border_pos.size() == 2) {
                 field.p(cell->i(), cell->j()) = 0.5 * (field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                     +  field.p(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
+            } else {
+                assert(false);
             }
         }
     }
@@ -170,7 +173,7 @@ void MovingWallBoundary::apply(Fields &field) {
         }
 
         if(border_pos.size() > 1){
-            std::cout << "Warning! Moving wall can have only single fluid neighbour cells!" << std::endl;
+            assert(false); // Should not reach here
         }
 
         field.v(cell->i(), cell->j()) = 0;
@@ -222,6 +225,8 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
             } else if (border_pos.size() == 2) {
                 field.T(cell->i(), cell->j()) = 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                      + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
+            } else {
+                assert(false);
             }
         } else {
             // Dirichlet Boundary Condition
@@ -231,6 +236,8 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] 
                                                 - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j()) 
                                                        + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
+            } else {
+                assert(false);
             }
         }
     }
