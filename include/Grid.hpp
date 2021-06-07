@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRID_HPP
+#define GRID_HPP
 
 #include <array>
 #include <map>
@@ -10,6 +11,7 @@
 #include "Datastructures.hpp"
 #include "Domain.hpp"
 #include "Enums.hpp"
+
 
 /**
  * @brief Data structure holds cells and related sub-containers
@@ -29,7 +31,7 @@ class Grid {
      * @param[in] cell size in y direction
      *
      */
-    Grid(std::string geom_name, Domain &domain);
+    Grid(std::string geom_name, Domain &domain, const int& my_rank);
 
     /// index based cell access
     Cell cell(int i, int j) const;
@@ -93,14 +95,19 @@ class Grid {
      */
     const std::vector<Cell *> &free_slip_cells() const;
 
-
+    /**
+     * @brief Access free ghost cells of subdomains
+     *
+     * @param[out] vector of free ghost cells
+     */
+    const std::vector<Cell *> &ghost_cells() const;
 
   private:
 
     /// Build cell data structures with given geometrical data
-    void assign_cell_types(std::vector<std::vector<int>> &geometry_data);
+    void assign_cell_types(Matrix<int> &geometry_data, const int& my_rank);
     /// Extract geometry from pgm file and create geometrical data
-    void parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data);
+    void parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data);
 
     Matrix<Cell> _cells;
 
@@ -110,10 +117,12 @@ class Grid {
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
     std::vector<Cell *> _free_slip_cells;
-    std::vector<Cell *> _ghost_fluid_cells;
+    std::vector<Cell *> _ghost_cells;
 
     Domain _domain;
 
     double _dx;
     double _dy;
 };
+
+#endif // GRID_HPP

@@ -1,4 +1,5 @@
 #include "Fields.hpp"
+#include "Grid.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -11,7 +12,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _V = Matrix<double>(imax + 2, jmax + 2, VI);
     _P = Matrix<double>(imax + 2, jmax + 2, PI);
     _T = Matrix<double>(imax + 2, jmax + 2, TI);
-    _T_new = Matrix<double>(imax + 2, jmax + 2, 0);
+    _T_new = Matrix<double>(imax + 2, jmax + 2, TI);
 
     _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
@@ -21,26 +22,21 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 // Calculate Fn and Gn
 void Fields::calculate_fluxes(Grid &grid, bool energy_eq){
-    
+
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
         int j = currentCell->j();
         if(currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID){
             _F(i, j) = _U(i, j) +
-                _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
-                - int(energy_eq) *  _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
+                       _dt * (_nu * Discretization::diffusion(_U, i, j) - Discretization::convection_u(_U, _V, i, j)) 
+                       - int(energy_eq) * _beta * _dt * Discretization::interpolate(_T, i, j, 1, 0) * _GX;
         }
-
-    }
-    for (auto currentCell : grid.fluid_cells()) {
-        int i = currentCell->i();
-        int j = currentCell->j();
         if(currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID){
             _G(i, j) = _V(i, j) +
                         _dt * (_nu * Discretization::diffusion(_V, i, j) - Discretization::convection_v(_U, _V, i, j))
                         - int(energy_eq) * _beta * _dt * Discretization::interpolate(_T, i, j, 0, 1) * _GY;
-        }                       
-    }        
+        } 
+    }      
 }
 
 // calculate right hand side rhs of the pressure eq
@@ -68,14 +64,10 @@ void Fields::calculate_velocities(Grid &grid) {
         int i = currentCell->i();
         int j = currentCell->j();
         _U(i, j) = _F(i, j) - (_dt / dx) * (_P(i + 1, j) - _P(i, j));
-    }
-
-    for (auto currentCell : grid.fluid_cells()) {
-        int i = currentCell->i();
-        int j = currentCell->j();
         _V(i, j) = _G(i, j) - (_dt / dy) * (_P(i, j + 1) - _P(i, j));
     }
 }
+
 
 // Calculate the velocities at the next time step
 void Fields::calculate_temperature(Grid &grid) {
@@ -101,7 +93,7 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
     double dy = grid.dy();
 
     // Find Maximum values of U and V inside their fields: Umax, Vmax
-    double Umax , Vmax;
+    double Umax = 0, Vmax = 0;
     Umax = std::abs(*std::max_element(_U.container()->begin(), _U.container()->end(), abs_compare));
     Vmax = std::abs(*std::max_element(_V.container()->begin(), _V.container()->end(), abs_compare));
 
@@ -115,7 +107,7 @@ double Fields::calculate_dt(Grid &grid, bool energy_eq) {
         dt.push_back((dx * dx * dy * dy) / (dx * dx + dy * dy) / (2.0 * _alpha));
     }
 
-    _dt = _tau * *std::min_element(dt.begin(), dt.end());
+    _dt = _tau * (*std::min_element(dt.begin(), dt.end()));
             
     return _dt;
 }
@@ -128,6 +120,13 @@ double &Fields::f(int i, int j) { return _F(i, j); }
 double &Fields::g(int i, int j) { return _G(i, j); }
 double &Fields::rs(int i, int j) { return _RS(i, j); }
 
+Matrix<double> &Fields::u_matrix() { return _U; }
+Matrix<double> &Fields::v_matrix() { return _V; }
 Matrix<double> &Fields::p_matrix() { return _P; }
+Matrix<double> &Fields::T_matrix() { return _T; }
+Matrix<double> &Fields::f_matrix() { return _F; }
+Matrix<double> &Fields::g_matrix() { return _G; }
+Matrix<double> &Fields::rs_matrix() { return _RS;}
+
 
 double Fields::dt() const { return _dt; }

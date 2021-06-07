@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ENUMS_HPP
+#define ENUMS_HPP
 
 enum class border_position {
     TOP,
@@ -14,13 +15,15 @@ const int LEFT = 2;
 const int RIGHT = 3;
 } // namespace border
 
-enum class cell_type {  /** PGM INDEX **/
-    FLUID,              /*     0       */
-    INFLOW,             /*     1       */
-    OUTFLOW,            /*     2       */
-    FIXED_WALL,         /*     3-7     */
-    MOVING_WALL,        /*     8       */
-    FREE_SLIP_WALL,     /*     9       */
-    FLUID_GHOST_CELL,   /*     10       */
-    DEFAULT             /*             */
-};                      /***************/
+enum class cell_type {  /** PGM INDEX  **/
+    FLUID,              /*     0        */
+    INFLOW,             /*     1        */
+    OUTFLOW,            /*     2        */
+    FIXED_WALL,         /*     3-7      */
+    MOVING_WALL,        /*     8        */
+    FREE_SLIP_WALL,     /*     9        */
+    GHOST,              /* No PGM Index */  
+    DEFAULT             /*              */
+};                      /****************/
+
+#endif // ENUMS_HPP

@@ -1,5 +1,5 @@
 #include "Grid.hpp"
-#include "Enums.hpp"
+#include "Communication.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -7,8 +7,10 @@
 #include <sstream>
 #include <vector>
 #include <cassert>
+#include <cmath>
+#include <mpi.h>
 
-Grid::Grid(std::string geom_name, Domain &domain) {
+Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank) {
 
     _domain = domain;
 
@@ -19,13 +21,18 @@ Grid::Grid(std::string geom_name, Domain &domain) {
         exit(EXIT_FAILURE);
     } 
 
-    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2, std::vector<int>(_domain.domain_size_y + 2, 0));
-     
-    parse_geometry_file(geom_name, geometry_data);
-    assign_cell_types(geometry_data);
+    Matrix<int> geometry_data = Matrix<int>(_domain.domain_size_x + 2, _domain.domain_size_y + 2, 0);
+    
+    if(my_rank == 0){
+        parse_geometry_file(geom_name, geometry_data);
+    }
+
+    Communication::broadcast((void*)geometry_data.data(), ((_domain.domain_size_x + 2) * (_domain.domain_size_y + 2)) , MPI::INT, 0);
+
+    assign_cell_types(geometry_data, my_rank);
 }
 
-void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
+void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     /*
         Geometry ID for each cell:
             FLUID,         ->  0       
@@ -37,48 +44,84 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     */
     int i = 0;
     int j = 0;
+    int i_geom;
+    int j_geom;
 
-    for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
+    for (int j_domain = _domain.jmin; j_domain < _domain.jmax; ++j_domain) {
         
         i = 0;
-        
-        for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
 
-            if (geometry_data.at(i_geom).at(j_geom) == 0) {
+        for (int i_domain = _domain.imin; i_domain < _domain.imax; ++i_domain) {
+            // Shift each subdomain to its correct place in a parallel computation
+            i_geom = i_domain + _domain.max_size_x * (my_rank % _domain.iproc);
+            j_geom = j_domain + _domain.max_size_y * std::floor(my_rank / _domain.iproc);
+
+            if (geometry_data(i_geom, j_geom) == 0) {
                 // Fluid
-                _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data.at(i_geom).at(j_geom));
-                _fluid_cells.push_back(&_cells(i, j));
-                
-            } else if (geometry_data.at(i_geom).at(j_geom) == 1) {
+                _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data(i_geom, j_geom));
+            } else if (geometry_data(i_geom, j_geom) == 1) {
                 // Inlet
-                _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data.at(i_geom).at(j_geom));
-                _inflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 2) {
+                _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data(i_geom, j_geom));
+            } else if (geometry_data(i_geom, j_geom) == 2) {
                 // Outlet
-                _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
-                _outflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) <= 7) { // Numbers 3-7
+                _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data(i_geom, j_geom));
+            } else if (geometry_data(i_geom, j_geom) <= 7) { // Numbers 3-7
                 // Fixed wall
-                _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
-                _fixed_wall_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 8) {
+                _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data(i_geom, j_geom));
+            } else if (geometry_data(i_geom, j_geom) == 8) {
                 // Moving wall
-                _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
-                _moving_wall_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 9) {
+                _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data(i_geom, j_geom));
+            } else if (geometry_data(i_geom, j_geom) == 9) {
                 // Free slip
-                _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data.at(i_geom).at(j_geom));
-                _free_slip_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 10) {
-                // Ghost Fluid Cell
-                _cells(i, j) = Cell(i, j, cell_type::FLUID_GHOST_CELL, geometry_data.at(i_geom).at(j_geom));
-                _ghost_fluid_cells.push_back(&_cells(i, j));
+                _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data(i_geom, j_geom));
             } 
 
             ++i;
         }
 
         ++j;
+    }
+
+    // Subdomain Ghost cell in parallel computation 
+    for (int i = 0; i < _domain.size_x + 2; ++i) {
+        if(_cells(i, 0).type() == cell_type::FLUID){
+            _cells(i, 0) = Cell(i, 0, cell_type::GHOST);
+        }
+        if(_cells(i, _domain.size_y + 1).type() == cell_type::FLUID){
+            _cells(i, _domain.size_y + 1) = Cell(i, _domain.size_y + 1, cell_type::GHOST);
+        }
+    }
+
+    // Subdomain Ghost cell in parallel computation 
+    for (int j = 0; j < _domain.size_y + 2; ++j) {
+        if(_cells(0, j).type() == cell_type::FLUID){
+            _cells(0, j) = Cell(0, j, cell_type::GHOST);
+        }
+        if(_cells(_domain.size_x + 1, j).type() == cell_type::FLUID){
+            _cells(_domain.size_x + 1, j) = Cell(_domain.size_x + 1, j, cell_type::GHOST);
+        }
+    }  
+
+
+    for (int i = 0; i < _domain.size_x + 2; ++i){
+        for (int j = 0; j < _domain.size_y + 2; ++j) {
+
+            if(_cells(i, j).type() == cell_type::FLUID){
+                _fluid_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::INFLOW){
+                _inflow_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::OUTFLOW){
+                _outflow_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::FIXED_WALL){
+                _fixed_wall_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::MOVING_WALL){   
+                _moving_wall_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::FREE_SLIP_WALL){    
+                _free_slip_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::GHOST){    
+                _ghost_cells.push_back(&_cells(i, j));
+            }
+        }
     }
 
     // Corner cell neighbour assigment
@@ -92,7 +135,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
     if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::RIGHT);
-    }
+    } 
+
     // Top-Left Corner
     i = 0;
     j = _domain.size_y + 1;
@@ -103,7 +147,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
     if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::RIGHT);
-    }
+    }  
 
     // Top-Right Corner
     i = _domain.size_x + 1;
@@ -115,7 +159,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
     if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::LEFT);
-    }
+    }  
 
     // Bottom-Right Corner
     i = Grid::_domain.size_x + 1;
@@ -127,7 +171,8 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
     if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::LEFT);
-    }
+    } 
+
     // Bottom cells
     j = 0;
     for (int i = 1; i < _domain.size_x + 1; ++i) {
@@ -177,7 +222,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::TOP);
-        }
+        }       
     }
     // Right Cells
     i = Grid::_domain.size_x + 1;
@@ -193,7 +238,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
             _cells(i, j).add_border(border_position::TOP);
-        }
+        }        
     }
 
     // Inner cells
@@ -249,7 +294,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
 
 
-void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
+void Grid::parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data) {
 
     size_t numcols, numrows, depth;
 
@@ -273,15 +318,14 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    assert(numrows == geometry_data.size());
-    assert(numcols == geometry_data[0].size());
+    assert(geometry_data.size() == numrows * numcols);
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {
         for (size_t row = 0; row < numrows; ++row) {
-            ss >> geometry_data[row][col];
+            ss >> geometry_data(row, col);
         }
-    }
+    } 
 
     infile.close();
 
@@ -312,3 +356,5 @@ const std::vector<Cell *> &Grid::free_slip_cells() const{ return _free_slip_cell
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
+
+const std::vector<Cell *> &Grid::ghost_cells() const { return _ghost_cells; }

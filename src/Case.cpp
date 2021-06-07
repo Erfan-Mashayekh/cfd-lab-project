@@ -1,16 +1,19 @@
 #include "Case.hpp"
 #include "Enums.hpp"
+#include "Parameters.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <map>
-#include <vector>
-#include <cassert>
-#include <regex>
 #include <limits>
-#include <vtkUniformGrid.h>
+#include <map>
+#include <regex>
+#include <vector>
 
 namespace filesystem = std::filesystem;
 
@@ -23,144 +26,232 @@ namespace filesystem = std::filesystem;
 #include <vtkStructuredGridWriter.h>
 #include <vtkTuple.h>
 
-Case::Case(std::string file_name, int argn, char **args) {
-    (void)argn;
-    (void)args; // Remove if additional arguments are used
-    // Read input parameters
-    const int MAX_LINE_LENGTH = 1024;
-    std::ifstream file(file_name);
-    double nu;      /* viscosity */
-    double UI;      /* velocity x-direction */
-    double VI;      /* velocity y-direction */
-    double PI;      /* pressure */
-    double GX;      /* gravitation x-direction */
-    double GY;      /* gravitation y-direction */
-    double xlength; /* length of the domain x-dir. */
-    double ylength; /* length of the domain y-dir. */
-    double dt;      /* time step */
-    int imax;       /* number of cells x-direction */
-    int jmax;       /* number of cells y-direction */
-    double gamma;   /* uppwind differencing factor */
-    double omg;     /* relaxation factor */
-    double tau;     /* safety factor for time step */
-    int itermax;    /* max. number of iterations for pressure per time step */
-    double eps;     /* accuracy bound for pressure */
-    double UIN;     /* inlet velocity x-direction */
-    double VIN;     /* inlet velocity y-direction */
-    double TI;      /* initial temperature */
-    double TIN;     /* inlet temperature */
-    double beta;    /* thermal expansion coefficient */
-    double alpha;   /* thermal diffusivity */
-    int num_walls;  /* number of walls */
-    std::map<int, double> wall_vel;   /* Wall velocity against the wall index */
-    std::map<int, double> wall_temp;  /* Wall temperature against the wall index */
+Case::Case(std::string file_name, int &my_rank, int &comm_size) : _my_rank(my_rank), _comm_size(comm_size) {
 
-    if (file.is_open()) {
+    Parameters input;
 
-        std::string var;
-        while (!file.eof() && file.good()) {
-            file >> var;
-            if (var[0] == '#') { /* ignore comment line*/
-                file.ignore(MAX_LINE_LENGTH, '\n');
-            } else {
-                if (var == "geo_file") file >> _geom_name;
-                if (var == "xlength") file >> xlength;
-                if (var == "ylength") file >> ylength;
-                if (var == "nu") file >> nu;
-                if (var == "t_end") file >> _t_end;
-                if (var == "dt") file >> dt;
-                if (var == "omg") file >> omg;
-                if (var == "eps") file >> eps;
-                if (var == "tau") file >> tau;
-                if (var == "gamma") file >> gamma;
-                if (var == "dt_value") file >> _output_freq;
-                if (var == "UI") file >> UI;
-                if (var == "VI") file >> VI;
-                if (var == "GX") file >> GX;
-                if (var == "GY") file >> GY;
-                if (var == "PI") file >> PI;
-                if (var == "itermax") file >> itermax;
-                if (var == "imax") file >> imax;
-                if (var == "jmax") file >> jmax;
-                if (var == "UIN") file >> UIN;
-                if (var == "VIN") file >> VIN;
-                if (var == "energy_eq"){
-                    std::string state;
-                    file >> state;
-                    if (state == "on") _energy_eq = true;
-                    else _energy_eq = false;
-                }
-                if (var == "TI") file >> TI;
-                if (var == "TIN") file >> TIN;
-                if (var == "beta") file >> beta;
-                if (var == "alpha") file >> alpha;
-                if (var == "num_walls") file >> num_walls;
+    // create a type for struct input
+    const int nitems = 31;
+    int blocklengths[nitems] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 4};
 
-                // In the following code,
-                // - var reads the 'wall_vel_x' or 'wall_temp_x'
-                // - regex_search for any one/two digit index
-                // in the string and extracts the digit to idx
-                // - then it checks if the read string contains
-                // 'wal_vel' or 'wall_temp'
-                // - Depending on the type of variable (vel/temp)
-                // the respective value is stored in the map with 
-                // value and the idx 
-                std::string str_vel = "wall_vel";
-                std::string str_temp = "wall_temp";
-                std::regex match_idx("[0-9][0-9]*");
-                std::smatch idx;
-                double value;
-                std::regex_search(var, idx, match_idx);
+    MPI_Datatype types[nitems] = {MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
 
-                if (std::search(var.begin(), var.end(), str_vel.begin(), str_vel.end()) != var.end()){
-                    file >> value;
-                    wall_vel.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
-                }
-                if (std::search(var.begin(), var.end(), str_temp.begin(), str_temp.end()) != var.end()){
-                    file >> value;
-                    wall_temp.insert( std::pair<int, double>( std::stoi(idx[0]), value ) );
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
+
+                                  MPI::DOUBLE, MPI::INT,    MPI::INT,    MPI::INT,    MPI::INT,
+                                  MPI::INT,    MPI::INT,    MPI::BOOL,   MPI::INT,    MPI::DOUBLE,
+
+                                  MPI::DOUBLE};
+
+    MPI_Datatype mpi_param_type;
+    MPI_Aint offsets[nitems];
+
+    offsets[0] = offsetof(Parameters, xlength);
+    offsets[1] = offsetof(Parameters, ylength);
+    offsets[2] = offsetof(Parameters, nu);
+    offsets[3] = offsetof(Parameters, dt);
+    offsets[4] = offsetof(Parameters, omg);
+    offsets[5] = offsetof(Parameters, eps);
+    offsets[6] = offsetof(Parameters, tau);
+    offsets[7] = offsetof(Parameters, gamma);
+    offsets[8] = offsetof(Parameters, UI);
+    offsets[9] = offsetof(Parameters, VI);
+    offsets[10] = offsetof(Parameters, PI);
+    offsets[11] = offsetof(Parameters, TI);
+    offsets[12] = offsetof(Parameters, GX);
+    offsets[13] = offsetof(Parameters, GY);
+    offsets[14] = offsetof(Parameters, UIN);
+    offsets[15] = offsetof(Parameters, VIN);
+    offsets[16] = offsetof(Parameters, TIN);
+    offsets[17] = offsetof(Parameters, beta);
+    offsets[18] = offsetof(Parameters, alpha);
+    offsets[19] = offsetof(Parameters, t_end);
+    offsets[20] = offsetof(Parameters, output_freq);
+    offsets[21] = offsetof(Parameters, itermax);
+    offsets[22] = offsetof(Parameters, imax);
+    offsets[23] = offsetof(Parameters, jmax);
+    offsets[24] = offsetof(Parameters, iproc);
+    offsets[25] = offsetof(Parameters, jproc);
+    offsets[26] = offsetof(Parameters, num_walls);
+    offsets[27] = offsetof(Parameters, energy_eq);
+    offsets[28] = offsetof(Parameters, wall_idx);
+    offsets[29] = offsetof(Parameters, wall_vel);
+    offsets[30] = offsetof(Parameters, wall_temp);
+
+    MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpi_param_type);
+    MPI_Type_commit(&mpi_param_type);
+
+    /****************************
+     * Rank 0 reads the file
+     * *************************/
+
+    if (_my_rank == 0) {
+        // Read input parameters
+        const int MAX_LINE_LENGTH = 1024;
+        std::ifstream file(file_name);
+
+        if (file.is_open()) {
+
+            std::string var;
+            int index = 0;
+            while (!file.eof() && file.good()) {
+                file >> var;
+                if (var[0] == '#') { /* ignore comment line*/
+                    file.ignore(MAX_LINE_LENGTH, '\n');
+                } else {
+                    if (var == "xlength") file >> input.xlength;
+                    if (var == "ylength") file >> input.ylength;
+                    if (var == "nu") file >> input.nu;
+                    if (var == "dt") file >> input.dt;
+                    if (var == "omg") file >> input.omg;
+                    if (var == "eps") file >> input.eps;
+                    if (var == "tau") file >> input.tau;
+                    if (var == "gamma") file >> input.gamma;
+                    if (var == "UI") file >> input.UI;
+                    if (var == "VI") file >> input.VI;
+                    if (var == "PI") file >> input.PI;
+                    if (var == "TI") file >> input.TI;
+                    if (var == "GX") file >> input.GX;
+                    if (var == "GY") file >> input.GY;
+                    if (var == "UIN") file >> input.UIN;
+                    if (var == "VIN") file >> input.VIN;
+                    if (var == "TIN") file >> input.TIN;
+                    if (var == "beta") file >> input.beta;
+                    if (var == "alpha") file >> input.alpha;
+                    if (var == "itermax") file >> input.itermax;
+                    if (var == "imax") file >> input.imax;
+                    if (var == "jmax") file >> input.jmax;
+                    if (var == "iproc") file >> input.iproc;
+                    if (var == "jproc") file >> input.jproc;
+                    if (var == "num_walls") file >> input.num_walls;
+                    // Class members
+                    if (var == "t_end") file >> input.t_end;
+                    if (var == "dt_value") file >> input.output_freq;
+                    if (var == "energy_eq") {
+                        std::string state;
+                        file >> state;
+                        if (state == "on")
+                            input.energy_eq = true;
+                        else
+                            input.energy_eq = false;
+                    }
+
+                    /************************************************
+                     * In the following code,
+                     * - var reads the 'wall_vel_x' or 'wall_temp_x'
+                     * - regex_search for any one/two digit index
+                     * in the string and extracts the digit to idx
+                     * - then it checks if the read string contains
+                     * 'wal_vel' or 'wall_temp'
+                     * - Depending on the type of variable (vel/temp)
+                     * the respective value is stored in the map with
+                     * value and the idx
+                     *************************************************/
+                    std::string str_vel = "wall_vel";
+                    std::string str_temp = "wall_temp";
+                    std::regex match_idx("[0-9][0-9]*");
+                    std::smatch idx;
+                    double value;
+                    std::regex_search(var, idx, match_idx);
+
+                    if (std::search(var.begin(), var.end(), str_vel.begin(), str_vel.end()) != var.end()) {
+                        file >> value;
+                        if (std::find(input.wall_idx.begin(), input.wall_idx.end(), std::stoi(idx[0])) ==
+                            input.wall_idx.end()) {
+                            input.wall_idx[index] = std::stoi(idx[0]);
+                            input.wall_vel[index] = value;
+                            index++;
+                        } else {
+                            input
+                                .wall_vel[*std::find(input.wall_idx.begin(), input.wall_idx.end(), std::stoi(idx[0]))] =
+                                value;
+                        }
+                    }
+                    if (std::search(var.begin(), var.end(), str_temp.begin(), str_temp.end()) != var.end()) {
+                        file >> value;
+                        if (std::find(input.wall_idx.begin(), input.wall_idx.end(), std::stoi(idx[0])) ==
+                            input.wall_idx.end()) {
+                            input.wall_idx[index] = std::stoi(idx[0]);
+                            input.wall_temp[index] = value;
+                            index++;
+                        } else {
+                            input.wall_temp[*std::find(input.wall_idx.begin(), input.wall_idx.end(),
+                                                       std::stoi(idx[0]))] = value;
+                        }
+                    }
                 }
             }
         }
+        file.close();
+
+        if (comm_size != input.iproc * input.jproc) {
+            std::cout << "ERROR: The simulation must be run on " << input.iproc * input.jproc
+                      << " number of processes!. Terminating!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
     }
-    file.close();
+
+    // Constrcut the geometry file name as the same as file_name
+    // But as .pgm format
+    _geom_name.assign(file_name, 0, file_name.size() - 4);
+    _geom_name.append(".pgm");
+
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
-    // Build up the domain
-    Domain domain;
-    domain.dx = xlength / (double)imax;
-    domain.dy = ylength / (double)jmax;
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
+    // Broadcast input data to all processes in the communicator
+    Communication::broadcast(&input, 1, mpi_param_type, 0);
 
-    build_domain(domain, imax, jmax);
+    Communication::barrier();
 
-    _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, alpha, beta, GX, GY);
+    // Set up wall_vel and wall_temp as std::maps
+    std::map<int, double> wall_vel;
+    std::map<int, double> wall_temp;
 
-    _discretization = Discretization(domain.dx, domain.dy, gamma);
-    _pressure_solver = std::make_unique<SOR>(omg);
-    _max_iter = itermax;
-    _tolerance = eps;
+    for (size_t i = 0; i < input.wall_idx.size(); i++) {
+        if (input.wall_idx[i] != -1) {
+            wall_vel.insert(std::pair<int, double>(input.wall_idx[i], input.wall_vel[i]));
+            wall_temp.insert(std::pair<int, double>(input.wall_idx[i], input.wall_temp[i]));
+        }
+    }
+
+    // Build up the domain for each process
+    Domain subdomain;
+    build_domain(subdomain, input.xlength, input.ylength, input.imax, input.jmax, input.iproc, input.jproc);
+
+    _grid = Grid(_geom_name, subdomain, _my_rank);
+    _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y, input.UI, input.VI,
+                    input.PI, input.TI, input.alpha, input.beta, input.GX, input.GY);
+
+    _discretization = Discretization(_grid.domain().dx, _grid.domain().dy, input.gamma);
+    _pressure_solver = std::make_unique<SOR>(input.omg);
+    _max_iter = input.itermax;
+    _tolerance = input.eps;
+    _output_freq = input.output_freq;
+    _t_end = input.t_end;
+    _energy_eq = input.energy_eq;
 
     // Construct boundaries
     // Inflow
     if (not _grid.inflow_cells().empty()) {
-        if(_energy_eq){
-            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN, TIN));
+        if (_energy_eq) {
+            _boundaries.push_back(
+                std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN, input.TIN));
         } else {
-            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), UIN, VIN));
+            _boundaries.push_back(std::make_unique<InflowBoundary>(_grid.inflow_cells(), input.UIN, input.VIN));
         }
     }
     // Outflow
     if (not _grid.outflow_cells().empty()) {
-        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), PI));
+        _boundaries.push_back(std::make_unique<OutflowBoundary>(_grid.outflow_cells(), input.PI));
     }
 
     // Fixed wall
     if (not _grid.fixed_wall_cells().empty()) {
-        if(_energy_eq){
+        if (_energy_eq) {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
@@ -168,7 +259,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Moving wall
     if (not _grid.moving_wall_cells().empty()) {
-        if(_energy_eq){
+        if (_energy_eq) {
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel, wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), wall_vel));
@@ -176,11 +267,11 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     // Free slip
     if (not _grid.free_slip_cells().empty()) {
-        if(_energy_eq){
+        if (_energy_eq) {
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
-        } 
+        }
     }
 }
 
@@ -215,9 +306,9 @@ void Case::set_file_names(std::string file_name) {
     _dict_name.append(_case_name);
     _dict_name.append("_Output");
 
-    if (_geom_name.compare("NONE") != 0) {
-        _geom_name = _prefix + _geom_name;
-    }
+    // if (_geom_name.compare("NONE") != 0) {
+    //     _geom_name = _prefix + _geom_name;
+    // }
 
     // Create output directory
     filesystem::path folder(_dict_name);
@@ -253,33 +344,53 @@ void Case::set_file_names(std::string file_name) {
 void Case::simulate() {
 
     assert(_output_freq > 0); //
-    std::cout << "Fluidchen is running and will print vtk output every "
-              << _output_freq <<"s until " << _t_end << "s..." << std::endl;
+    std::cout << "Fluidchen is running and will print vtk output every " << _output_freq << "s until " << _t_end
+              << "s..." << std::endl;
 
     // initialization
     double t = 0.0;
+    double dt_proc = 0;
     double dt = _field.dt();
     int timestep = 0;
     double step = 0;
     // time loop
     while (t < _t_end) {
 
+        std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
+
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
+        std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
-        if(_energy_eq){
-            for (auto &boundary : _boundaries) {
-                boundary->apply_temperature(_field);
-            }
-            _field.calculate_temperature(_grid);
-        }
+        // if (_energy_eq) {
+        //     for (auto &boundary : _boundaries) {
+        //         boundary->apply_temperature(_field);
+        //     }
+
+        //     _field.calculate_temperature(_grid);
+
+        //     Communication::barrier();
+
+        //     Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank);
+        // }
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
 
+        std::cout << std::endl << "This show after calculate_fluxes" << std::endl;
+
+        Communication::barrier();
+
+        Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
+        Communication::barrier();
+
+        Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
+        Communication::barrier();
+
+        std::cout << "Start Calculate rs " << _my_rank << std::endl;
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
@@ -287,31 +398,37 @@ void Case::simulate() {
         // Initialization of residual and iteration counter
         int it = 0;
         // Set initial tolerance
-        double res =  std::numeric_limits<double>::max();        
-        
-        while (res > _tolerance){
-            
-          
-            // TODO: Set pressure Neumann Boundary Conditions
-            //_field.set_pressure_bc(_grid);
-            
-            // Perform SOR Solver and retrieve esidual for the loop continuity
-            res = _pressure_solver->solve(_field, _grid, _boundaries);
+        double res_proc = std::numeric_limits<double>::max();
+        double res = std::numeric_limits<double>::max();
+
+        while (res > _tolerance) {
+
+            // Perform SOR Solver and retrieve residual for the loop continuity
+            res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
+
+            Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank);
+
+            Communication::barrier();
+
+            Communication::reduce_sum(res_proc, res);
 
             // Increment the iteration counter
             it++;
 
             // Check if SOR didn't converge
-            if(it > _max_iter) {
-               std::cout << "WARNING! SOR reached maximum number of iterations at t = " 
-               << t << ". Residual = " << res << std::endl;
-               break;
+            if (it > _max_iter) {
+                std::cout << "WARNING! SOR reached maximum number of iterations at t = " << t << ". Residual = " << res
+                          << std::endl;
+                break;
             }
         }
 
-
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
+
+        Communication::barrier();
+        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank);
+        Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank);
 
         // Calculate new time
         t = t + dt;
@@ -320,27 +437,27 @@ void Case::simulate() {
         timestep++;
 
         // Calculate dt for adaptive time stepping
-        dt = _field.calculate_dt(_grid, _energy_eq);
+        dt_proc = _field.calculate_dt(_grid, _energy_eq);
 
+        Communication::barrier();
+        Communication::reduce_min(dt_proc, dt);
 
         // Output the vtk every 1s
         if (t >= step + _output_freq) {
             step = step + _output_freq;
             std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
-            output_vtk(step, 0);
+            output_vtk(step);
         }
-     
     }
 
     // Output the final VTK file
-    output_vtk(step, 0);
+    output_vtk(step);
 
     // End message
     std::cout << "Done!\n";
-
 }
 
-void Case::output_vtk(int timestep, int my_rank) {
+void Case::output_vtk(int timestep) {
     // Create a new structured grid
     vtkSmartPointer<vtkStructuredGrid> structuredGrid = vtkSmartPointer<vtkStructuredGrid>::New();
 
@@ -381,12 +498,10 @@ void Case::output_vtk(int timestep, int my_rank) {
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
 
-     // Temperature Array
+    // Temperature Array
     vtkDoubleArray *Temperature = vtkDoubleArray::New();
     Temperature->SetName("temperature");
     Temperature->SetNumberOfComponents(1);
-
-
 
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
@@ -412,7 +527,7 @@ void Case::output_vtk(int timestep, int my_rank) {
     }
 
     // Add Temperature to Structured Grid
-    if(_energy_eq){
+    if (_energy_eq) {
         structuredGrid->GetCellData()->AddArray(Temperature);
     }
 
@@ -427,20 +542,49 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "" + std::to_string(_my_rank) + "." + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);
     writer->Write();
-
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
+void Case::build_domain(Domain &domain, double xlength, double ylength, int imax_domain, int jmax_domain, int iproc,
+                        int jproc) {
+
+    domain.dx = xlength / (double)imax_domain;
+    domain.dy = ylength / (double)jmax_domain;
+    domain.domain_size_x = imax_domain;
+    domain.domain_size_y = jmax_domain;
+    domain.iproc = iproc;
+    domain.jproc = jproc;
+
+    int x_proc = _my_rank % iproc;
+    int y_proc = std::floor(_my_rank / iproc);
+
+    int max_partition_size_x = (imax_domain % iproc) ? std::floor(imax_domain / iproc) + 1 : (imax_domain / iproc);
+    int max_partition_size_y = (jmax_domain % jproc) ? std::floor(jmax_domain / jproc) + 1 : (jmax_domain / jproc);
+
+    domain.max_size_x = max_partition_size_x;
+    domain.max_size_y = max_partition_size_y;
+
+    int residual_partition_size_x = imax_domain - max_partition_size_x * (iproc - 1);
+    int residual_partition_size_y = jmax_domain - max_partition_size_y * (jproc - 1);
+
+    if (x_proc == iproc - 1) {
+        domain.size_x = residual_partition_size_x;
+    } else {
+        domain.size_x = max_partition_size_x;
+    }
+
+    if (y_proc == jproc - 1) {
+        domain.size_y = residual_partition_size_y;
+    } else {
+        domain.size_y = max_partition_size_y;
+    }
+
     domain.imin = 0;
     domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
-    
+    domain.imax = domain.size_x + 2;
+    domain.jmax = domain.size_y + 2;
 }
