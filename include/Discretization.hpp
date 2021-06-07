@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DISCRETIZATION_HPP
+#define DISCRETIZATION_HPP
 
 #include "Datastructures.hpp"
 
@@ -105,3 +106,5 @@ class Discretization {
     static double _dy;
     static double _gamma;
 };
+
+#endif // DISCRITIZATION_HPP

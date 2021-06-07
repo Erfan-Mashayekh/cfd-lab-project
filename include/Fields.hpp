@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FIELDS_HPP
+#define FIELDS_HPP
 
 #include "Datastructures.hpp"
 #include "Discretization.hpp"
@@ -155,3 +156,5 @@ class Fields {
     /// gravitation x-direction
     double _GY;
 };
+
+#endif // FIELDS_HPP

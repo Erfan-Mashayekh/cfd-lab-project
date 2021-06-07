@@ -22,9 +22,9 @@ int main(int argn, char **args) {
         }
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    Communication::barrier();
 
-    // problem.simulate();
+    problem.simulate();
 
     Communication::finalize();
 }

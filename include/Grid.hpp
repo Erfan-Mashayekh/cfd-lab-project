@@ -1,4 +1,5 @@
-#pragma once
+#ifndef GRID_HPP
+#define GRID_HPP
 
 #include <array>
 #include <map>
@@ -10,6 +11,7 @@
 #include "Datastructures.hpp"
 #include "Domain.hpp"
 #include "Enums.hpp"
+
 
 /**
  * @brief Data structure holds cells and related sub-containers
@@ -29,7 +31,7 @@ class Grid {
      * @param[in] cell size in y direction
      *
      */
-    Grid(std::string geom_name, Domain &domain, const int& my_rank, int &iproc, int &jproc);
+    Grid(std::string geom_name, Domain &domain, const int& my_rank);
 
     /// index based cell access
     Cell cell(int i, int j) const;
@@ -122,3 +124,5 @@ class Grid {
     double _dx;
     double _dy;
 };
+
+#endif // GRID_HPP

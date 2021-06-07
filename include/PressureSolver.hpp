@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PRESSURE_SOLVER_HPP
+#define PRESSURE_SOLVER_HPP
 
 #include "Boundary.hpp"
 #include "Fields.hpp"
@@ -53,3 +54,5 @@ class SOR : public PressureSolver {
   private:
     double _omega;
 };
+
+#endif // PRESSURE_SOLVER_HPP

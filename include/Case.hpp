@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CASE_HPP
+#define CASE_HPP
 
 #include <memory>
 #include <string>
@@ -65,7 +66,6 @@ class Case {
     Discretization _discretization;
     std::unique_ptr<PressureSolver> _pressure_solver;
     std::vector<std::unique_ptr<Boundary>> _boundaries;
-    Communication _communication;
 
     /// Solver convergence tolerance
     double _tolerance;
@@ -94,6 +94,9 @@ class Case {
      */
     void output_vtk(int timestep);
     
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc);
+    void build_domain(Domain &domain, double xlength, double ylength, int imax_domain, int jmax_domain, int iproc, int jproc);
 
 };
+
+
+#endif // CASE_HPP

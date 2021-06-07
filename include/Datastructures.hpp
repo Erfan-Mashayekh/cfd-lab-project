@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DATASTRUCTURES_HPP
+#define DATASTRUCTURES_HPP
 
 #include <vector>
 
@@ -72,7 +73,7 @@ template <typename T> class Matrix {
      *
      * @param[out] size of the data structure
      */
-    int size() const { return _container.size(); }
+    size_t size() const { return _container.size(); }
 
     /// get the given row of the matrix
     std::vector<double> get_row(int row) {
@@ -121,3 +122,5 @@ template <typename T> class Matrix {
     /// Data container
     std::vector<T> _container;
 };
+
+#endif // DATASTRUCTURES_HPP

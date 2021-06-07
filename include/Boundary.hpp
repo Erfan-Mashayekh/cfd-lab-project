@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BOUNDARY_HPP
+#define BOUNDARY_HPP
 
 #include <vector>
 
@@ -116,3 +117,4 @@ class FreeSlipBoundary : public Boundary {
 };
 
 
+#endif // BOUNDARY_HPP
