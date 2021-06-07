@@ -225,7 +225,7 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
             } else if (border_pos.size() == 2) {
                 field.T(cell->i(), cell->j()) = 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                      + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
-            } else {
+            } else if (border_pos.size() > 2){
                 assert(false);
             }
         } else {
@@ -236,7 +236,7 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] 
                                                 - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j()) 
                                                        + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
-            } else {
+            } else if (border_pos.size() > 2){
                 assert(false);
             }
         }

@@ -91,6 +91,7 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
     /****************************
      * Rank 0 reads the file
      * *************************/
+
     if(_my_rank == 0){
         // Read input parameters
         const int MAX_LINE_LENGTH = 1024;
@@ -197,8 +198,12 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
+
+
     // Broadcast input data to all processes in the communicator
     Communication::broadcast(&input, 1, mpi_param_type, 0);
+
+    Communication::barrier();
 
     // Set up wall_vel and wall_temp as std::maps
     std::map<int, double> wall_vel;   
@@ -210,6 +215,8 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
             wall_temp.insert( std::pair<int, double>( input.wall_idx[i], input.wall_temp[i] ) );
         }
     }
+
+ 
 
     // Build up the domain for each process
     Domain subdomain;
@@ -298,9 +305,9 @@ void Case::set_file_names(std::string file_name) {
     _dict_name.append(_case_name);
     _dict_name.append("_Output");
 
-    if (_geom_name.compare("NONE") != 0) {
-        _geom_name = _prefix + _geom_name;
-    }
+    // if (_geom_name.compare("NONE") != 0) {
+    //     _geom_name = _prefix + _geom_name;
+    // }
 
     // Create output directory
     filesystem::path folder(_dict_name);

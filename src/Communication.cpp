@@ -173,7 +173,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 // // Find and return the minimum value over all ranks
 void Communication::reduce_min(double &input, double &output) {
 
-    MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 }
 
 
