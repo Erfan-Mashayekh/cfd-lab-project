@@ -59,33 +59,69 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
             if (geometry_data(i_geom, j_geom) == 0) {
                 // Fluid
                 _cells(i, j) = Cell(i, j, cell_type::FLUID, geometry_data(i_geom, j_geom));
-                _fluid_cells.push_back(&_cells(i, j));
             } else if (geometry_data(i_geom, j_geom) == 1) {
                 // Inlet
                 _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data(i_geom, j_geom));
-                _inflow_cells.push_back(&_cells(i, j));
             } else if (geometry_data(i_geom, j_geom) == 2) {
                 // Outlet
                 _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data(i_geom, j_geom));
-                _outflow_cells.push_back(&_cells(i, j));
             } else if (geometry_data(i_geom, j_geom) <= 7) { // Numbers 3-7
                 // Fixed wall
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data(i_geom, j_geom));
-                _fixed_wall_cells.push_back(&_cells(i, j));
             } else if (geometry_data(i_geom, j_geom) == 8) {
                 // Moving wall
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data(i_geom, j_geom));
-                _moving_wall_cells.push_back(&_cells(i, j));
             } else if (geometry_data(i_geom, j_geom) == 9) {
                 // Free slip
                 _cells(i, j) = Cell(i, j, cell_type::FREE_SLIP_WALL, geometry_data(i_geom, j_geom));
-                _free_slip_cells.push_back(&_cells(i, j));
             } 
 
             ++i;
         }
 
         ++j;
+    }
+
+    // Subdomain Ghost cell in parallel computation 
+    for (int i = 0; i < _domain.size_x + 2; ++i) {
+        if(_cells(i, 0).type() == cell_type::FLUID){
+            _cells(i, 0) = Cell(i, 0, cell_type::GHOST);
+        }
+        if(_cells(i, _domain.size_y + 1).type() == cell_type::FLUID){
+            _cells(i, _domain.size_y + 1) = Cell(i, _domain.size_y + 1, cell_type::GHOST);
+        }
+    }
+
+    // Subdomain Ghost cell in parallel computation 
+    for (int j = 0; j < _domain.size_y + 2; ++j) {
+        if(_cells(0, j).type() == cell_type::FLUID){
+            _cells(0, j) = Cell(0, j, cell_type::GHOST);
+        }
+        if(_cells(_domain.size_x + 1, j).type() == cell_type::FLUID){
+            _cells(_domain.size_x + 1, j) = Cell(_domain.size_x + 1, j, cell_type::GHOST);
+        }
+    }  
+
+
+    for (int i = 0; i < _domain.size_x + 2; ++i){
+        for (int j = 0; j < _domain.size_y + 2; ++j) {
+
+            if(_cells(i, j).type() == cell_type::FLUID){
+                _fluid_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::INFLOW){
+                _inflow_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::OUTFLOW){
+                _outflow_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::FIXED_WALL){
+                _fixed_wall_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::MOVING_WALL){   
+                _moving_wall_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::FREE_SLIP_WALL){    
+                _free_slip_cells.push_back(&_cells(i, j));
+            } else if(_cells(i, j).type() == cell_type::GHOST){    
+                _ghost_cells.push_back(&_cells(i, j));
+            }
+        }
     }
 
     // Corner cell neighbour assigment
@@ -230,31 +266,6 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         }
     }
 
-
-    // Subdomain Ghost cell in parallel computation 
-    for (int i = 0; i < _domain.size_x + 2; ++i) {
-        for (int j = 0; j < _domain.size_y + 2; ++j) {
-        
-            std::vector<border_position> border_pos = _cells(i, j).borders();
-
-            if((border_pos.size() == 3 || border_pos.size() == 2) && _cells(i, j).type() == cell_type::FLUID){
-                    _cells(i, j) = Cell(i, j, cell_type::GHOST);
-                    _ghost_cells.push_back(&_cells(i, j));
-            }
-        }
-    }
-
-    if(my_rank == 0){
-        for(int l = _domain.jmax-1; l >-1; l--){
-            for(int k=0; k<_domain.imax; k++){ 
-                std::cout << (int)_cells(k, l).type() << " ";
-            }
-            std::cout << std::endl;
-        }
-    } 
-
-
-    std::cout << "IMAX = " << _domain.imax << "  " << "JMAX = " << _domain.jmax << std::endl;
     /*******************************************
      * Terminate if Forbidden cells are present 
      ******************************************/

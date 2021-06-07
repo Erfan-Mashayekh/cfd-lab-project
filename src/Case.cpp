@@ -384,6 +384,7 @@ void Case::simulate() {
         Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
         Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
 
+        std::cout << "Start Calculate rs " << _my_rank << std::endl;
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
