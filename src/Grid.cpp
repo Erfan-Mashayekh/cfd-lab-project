@@ -28,7 +28,7 @@ Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank) {
     // TODO : check if this conversion correct.
     Communication::broadcast((void*)geometry_data.data(), ((_domain.domain_size_x + 2) * (_domain.domain_size_y + 2)) , MPI::INT, 0);
 
-    assign_cell_types(geometry_data, my_rank, domain.domain_iproc, domain.domain_jproc);
+    assign_cell_types(geometry_data, my_rank, domain.iproc, domain.jproc);
 }
 
 void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int &iproc, int &jproc) {

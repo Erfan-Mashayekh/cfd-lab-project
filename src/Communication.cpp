@@ -40,9 +40,13 @@ void Communication::broadcast(void *buffer, int count, MPI_Datatype datatype, in
 
 
 // Send/Receive the data using this communicator
-void Communication::communicate(Matrix<double> &field, const int &imax, const int &jmax, 
-                                        const int &iproc, const int &jproc, const int &my_rank) {
+void Communication::communicate(Matrix<double> &field, const Domain &domain, const int &my_rank) {
     
+    int iproc = domain.iproc;
+    int jproc = domain.jproc;
+    int imax = domain.imax;
+    int jmax = domain.jmax;
+
     void* data;
     MPI_Datatype datatype = MPI_DOUBLE;
     int tag = 1;
@@ -167,40 +171,16 @@ void Communication::communicate(Matrix<double> &field, const int &imax, const in
 }
 
 // // Find and return the minimum value over all ranks
-double Communication::reduce_min(double &value) {
+void Communication::reduce_min(double &input, double &output) {
 
-    // void* send_data = value;
-    void* recv_data;
-    int count = 1;
-    MPI_Datatype datatype = MPI_DOUBLE;
-    MPI_Op op = MPI_MIN;
-    int root = 0;
-    MPI_Comm communicator = MPI_COMM_WORLD;
-
-    MPI_Reduce( &value, recv_data, count, datatype, op, root, communicator);
-
-    // TODO: check the conversion
-    double result = *(double*)recv_data;
-    return result;
+    MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 }
 
 
 // // Compute total sum over all ranks
-double Communication::reduce_sum(double &value) {
+void Communication::reduce_sum(double &input, double &output) {
 
-    // void* send_data = value;
-    void* recv_data;
-    int count = 1;
-    MPI_Datatype datatype = MPI_DOUBLE;
-    MPI_Op op = MPI_SUM;
-    int root = 0;
-    MPI_Comm communicator = MPI_COMM_WORLD;
-
-    MPI_Reduce(&value, recv_data, count, datatype, op, root, communicator);
-
-    // TODO: check the conversion
-    double result = *(double*)recv_data;
-    return result;
+    MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 }
 
 
