@@ -46,14 +46,24 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int
     int i_geom;
     int j_geom;
 
+    std::cout << "Inside assign cell types " << std::endl;
+
+    
+    for(int l = 0; l < geometry_data.jmax(); l++){
+        for(int k = 0; k < geometry_data.imax(); k++){
+            std::cout << geometry_data(k, l) << " ";
+        }
+        std::cout << std::endl;
+    }
+
     for (int j_geom_domain = _domain.jmin; j_geom_domain < _domain.jmax; ++j_geom_domain) {
         
         i = 0;
 
         for (int i_geom_domain = _domain.imin; i_geom_domain < _domain.imax; ++i_geom_domain) {
             // Shift each subdomain to its correct place in a parallel computation
-            j_geom = j_geom_domain + _domain.jmax * (my_rank % iproc);
-            i_geom = i_geom_domain + _domain.imax * (my_rank % jproc);
+            j_geom = j_geom_domain + _domain.jmax * (my_rank % jproc);
+            i_geom = i_geom_domain + _domain.imax * (my_rank % iproc);
 
             if (geometry_data(i_geom, j_geom) == 0) {
                 // Fluid
@@ -87,6 +97,9 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int
 
         ++j;
     }
+
+
+    std::cout << "Finished assign cell types " << std::endl;
 
     // Corner cell neighbour assigment
     // Bottom-Left Corner

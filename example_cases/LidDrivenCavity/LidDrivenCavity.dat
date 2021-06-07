@@ -1,9 +1,11 @@
 #--------------------------------------------
 #           geometry file            
 #--------------------------------------------
-geo_file   LidDrivenCavity.pgm 
-iproc        1
-jproc        1
+geo_file   LidDrivenCavity.pgm
+
+iproc       2
+jproc       1
+
 #--------------------------------------------
 #            size of the domain             
 #--------------------------------------------
