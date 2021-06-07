@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CASE_HPP
+#define CASE_HPP
 
 #include <memory>
 #include <string>
@@ -94,6 +95,9 @@ class Case {
      */
     void output_vtk(int timestep);
     
-    void build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc);
+    void build_domain(Domain &domain, double xlength, double ylength, int imax_domain, int jmax_domain, int iproc, int jproc);
 
 };
+
+
+#endif // CASE_HPP

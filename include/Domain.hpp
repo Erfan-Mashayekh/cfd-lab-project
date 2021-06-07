@@ -1,6 +1,7 @@
-#pragma once
+#ifndef DOMAIN_HPP
+#define DOMAIN_HPP
+
 #include "Enums.hpp"
-// #include <mpi.h>
 
 /**
  * @brief Data structure that holds geometrical information
@@ -28,15 +29,21 @@ struct Domain {
     /// Number of cells in y direction
     int size_y{-1};
 
+    /// row number of the subdomain
+    int x_proc{-1};
+    /// column number of the subdomain
+    int y_proc{-1};
+
     /// Number of cells in x direction, not-decomposed
     int domain_size_x{-1};
     /// Number of cells in y direction, not-decomposed
     int domain_size_y{-1};
 
-    /// row of the subdomain
-    int row{-1};
-    /// column of the subdomain
-    int col{-1};
-    /// rank of the process allocated for the domain
-    Matrix<int> rank;
+    /// Number of processes in x direction
+    int domain_iproc{-1};
+    /// Number of processes in y direction
+    int domain_jproc{-1};
+
 };
+
+#endif // DOMAIN_HPP

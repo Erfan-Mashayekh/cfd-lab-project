@@ -1,29 +1,25 @@
-#pragma once
+#ifndef COMMUNICATION_HPP
+#define COMMUNICATION_HPP
 
 #include <memory>
 #include <string>
 #include <vector>
+#include <mpi.h>
 
 #include "Fields.hpp"
 
 class Communication {
 
-    public:
-        Communication() = default;
-        Communication(int imax, int jmax, int iproc,  int jproc);
-        // Communication(int rank, double jproc, double iproc); //iprod and jproc is the number of process per y or x
-        void init_parallel(int argn, char** args, int &my_rank, int &comm_size);
-        void finalize();
-        void communicate(Matrix<double> &field, const int &my_rank) ;
-        double reduce_sum(double &value);
-        double reduce_min(double &value);
-
-    private:
-        Matrix<Domain> _subdomain;
-        int _imax;
-        int _jmax;
-        int _iproc;
-        int _jproc;
+public:
+    static void init_parallel(int argn, char** args, int &my_rank, int &comm_size);
+    static void barrier();
+    static void finalize();
+    static void broadcast(void *buffer, int count, MPI_Datatype datatype, int root);
+    static void communicate(Matrix<double> &field, const int &imax, const int &jmax, 
+                            const int &iproc, const int &jproc, const int &my_rank) ;
+    static double reduce_sum(double &value);
+    static double reduce_min(double &value);
 
 };
 
+#endif // COMMUNICATION_HPP

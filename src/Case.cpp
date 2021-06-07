@@ -27,8 +27,8 @@ namespace filesystem = std::filesystem;
 #include <vtkTuple.h>
 
 
-Case::Case(std::string file_name, int& my_rank, int &comm_size)
-     : _comm_size(comm_size), _my_rank(my_rank) { 
+Case::Case(std::string file_name, int &my_rank, int &comm_size)
+     : _my_rank(my_rank), _comm_size(comm_size) { 
 
     Parameters input; 
 
@@ -187,25 +187,20 @@ Case::Case(std::string file_name, int& my_rank, int &comm_size)
             std::cout << "ERROR: The simulation must be run on " << input.iproc * input.jproc << " number of processes!. Terminating!" << std::endl;
             exit(EXIT_FAILURE);
         }
-
     }
 
+    // Constrcut the geometry file name as the same as file_name
+    // But as .pgm format
     _geom_name.assign(file_name, 0, file_name.size() - 4);
     _geom_name.append(".pgm");
 
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
-    // Broadcast information to all processes in the communicator
-    MPI_Bcast(&input, 1, mpi_param_type, 0, MPI_COMM_WORLD);
+    // Broadcast input data to all processes in the communicator
+    Communication::broadcast(&input, 1, mpi_param_type, 0);
 
-
-    _output_freq = input.output_freq;
-    _t_end = input.t_end;
-    _energy_eq = input.energy_eq;
-
-    _communication = Communication(input.imax, input.jmax, input.iproc, input.jproc);
-
+    // Set up wall_vel and wall_temp as std::maps
     std::map<int, double> wall_vel;   
     std::map<int, double> wall_temp; 
 
@@ -216,23 +211,21 @@ Case::Case(std::string file_name, int& my_rank, int &comm_size)
         }
     }
 
-    // Build up the domain
-    Domain domain;
-    domain.dx = input.xlength / (double)input.imax;
-    domain.dy = input.ylength / (double)input.jmax;
-    domain.domain_size_x = input.imax;
-    domain.domain_size_y = input.jmax;
+    // Build up the domain for each process
+    Domain subdomain;
+    build_domain(subdomain, input.xlength, input.ylength, input.imax, input.jmax, input.iproc, input.jproc);
 
-    build_domain(domain, input.imax, input.jmax, input.iproc, input.jproc);
-
-    _grid = Grid(_geom_name, domain, _my_rank, input.iproc, input.jproc);
+    _grid = Grid(_geom_name, subdomain, _my_rank);
     _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y, 
                     input.UI, input.VI, input.PI, input.TI, input.alpha, input.beta, input.GX, input.GY);
 
-    _discretization = Discretization(domain.dx, domain.dy, input.gamma);
+    _discretization = Discretization(_grid.domain().dx, _grid.domain().dy, input.gamma);
     _pressure_solver = std::make_unique<SOR>(input.omg);
     _max_iter = input.itermax;
     _tolerance = input.eps;
+    _output_freq = input.output_freq;
+    _t_end = input.t_end;
+    _energy_eq = input.energy_eq;
 
     // Construct boundaries
     // Inflow
@@ -348,8 +341,8 @@ void Case::simulate() {
 
     // initialization
     double t = 0.0;
-    double dt_sub = _field.dt();
-    double = dt;
+    double dt_proc = 0;
+    double dt = _field.dt();
     int timestep = 0;
     double step = 0;
     // time loop
@@ -366,13 +359,13 @@ void Case::simulate() {
                 boundary->apply_temperature(_field);
             }
             _field.calculate_temperature(_grid);
-            _communication.communicate(_field.T_matrix(), _my_rank);
+            _communication.communicate(_field.T_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
         }
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
-        _communication.communicate(_field.f_matrix(), _my_rank);
-        _communication.communicate(_field.g_matrix(), _my_rank);
+        _communication.communicate(_field.f_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
+        _communication.communicate(_field.g_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
@@ -393,7 +386,7 @@ void Case::simulate() {
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_sub = _pressure_solver->solve(_field, _grid, _boundaries);
             
-            _communication.communicate(_field.p_matrix(), _my_rank);
+            _communication.communicate(_field.p_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
             MPI_Barrier(MPI_COMM_WORLD);
             res = _communication.reduce_sum(res_sub);
 
@@ -412,8 +405,8 @@ void Case::simulate() {
 
         // Calculate the velocities at the next time step
         _field.calculate_velocities(_grid);
-        _communication.communicate(_field.u_matrix(), _my_rank);
-        _communication.communicate(_field.v_matrix(), _my_rank);
+        _communication.communicate(_field.u_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
+        _communication.communicate(_field.v_matrix(), _grid.domain().imax, _grid.domain().jmax, _grid.domain().domain_iproc, _grid.domain().domain_jproc, _my_rank);
 
         // Calculate new time
         t = t + dt;
@@ -422,9 +415,9 @@ void Case::simulate() {
         timestep++;
 
         // Calculate dt for adaptive time stepping
-        dt_sub = _field.calculate_dt(_grid, _energy_eq);
+        dt_proc = _field.calculate_dt(_grid, _energy_eq);
         MPI_Barrier(MPI_COMM_WORLD);
-        dt = _communication.reduce_min(dt_sub);
+        dt = _communication.reduce_min(dt_proc);
 
         // Output the vtk every 1s
         if (t >= step + _output_freq) {
@@ -538,7 +531,16 @@ void Case::output_vtk(int timestep) {
 
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
+void Case::build_domain(Domain &domain, double xlength, double ylength, int imax_domain, int jmax_domain, int iproc, int jproc) {
+
+    domain.dx = xlength / (double)imax_domain;
+    domain.dy = ylength / (double)jmax_domain;
+    domain.domain_size_x = imax_domain;
+    domain.domain_size_y = jmax_domain;
+    domain.domain_iproc  = iproc;
+    domain.domain_jproc  = jproc;
+    domain.x_proc = _my_rank % iproc;
+    domain.y_proc = std::floor(_my_rank / iproc);
 
     int max_partition_size_x = std::floor(imax_domain / iproc) + 1;
     int max_partition_size_y = std::floor(jmax_domain / jproc) + 1;
@@ -546,16 +548,13 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
     int residual_partition_size_x = imax_domain - max_partition_size_x * (iproc - 1);
     int residual_partition_size_y = jmax_domain - max_partition_size_y * (jproc - 1);
 
-    int partition_idx_x = _my_rank % iproc;
-    int partition_idx_y = std::floor(_my_rank / iproc);
-
-    if(partition_idx_x == iproc - 1){
+    if(domain.x_proc == iproc - 1){
         domain.size_x = residual_partition_size_x;
     } else {
         domain.size_x = max_partition_size_x;
     }
 
-    if(partition_idx_y == jproc - 1){
+    if(domain.y_proc == jproc - 1){
         domain.size_y = residual_partition_size_y;
     } else {
         domain.size_y = max_partition_size_y;

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ENUMS_HPP
+#define ENUMS_HPP
 
 enum class border_position {
     TOP,
@@ -24,3 +25,5 @@ enum class cell_type {  /** PGM INDEX  **/
     GHOST,              /* No PGM Index */
     DEFAULT             /*              */
 };                      /****************/
+
+#endif // ENUMS_HPP

@@ -1,5 +1,5 @@
 #include "Grid.hpp"
-#include "Enums.hpp"
+#include "Communication.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -7,10 +7,9 @@
 #include <sstream>
 #include <vector>
 #include <cassert>
-
 #include <mpi.h>
 
-Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank, int &iproc, int &jproc) {
+Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank) {
 
     _domain = domain;
 
@@ -21,16 +20,15 @@ Grid::Grid(std::string geom_name, Domain &domain, const int& my_rank, int &iproc
         exit(EXIT_FAILURE);
     } 
 
-    Matrix<int> geometry_data;
-    geometry_data = Matrix<int>(_domain.domain_size_x + 2, _domain.domain_size_y + 2, 0);
+    Matrix<int> geometry_data = Matrix<int>(_domain.domain_size_x + 2, _domain.domain_size_y + 2, 0);
     
     if(my_rank == 0){
         parse_geometry_file(geom_name, geometry_data);
     }
     // TODO : check if this conversion correct.
-    MPI_Bcast((void*)geometry_data.data(), ((_domain.domain_size_x + 2) * (_domain.domain_size_y + 2)) , MPI::INT, 0, MPI_COMM_WORLD);
+    Communication::broadcast((void*)geometry_data.data(), ((_domain.domain_size_x + 2) * (_domain.domain_size_y + 2)) , MPI::INT, 0);
 
-    assign_cell_types(geometry_data, my_rank, iproc, jproc);
+    assign_cell_types(geometry_data, my_rank, domain.domain_iproc, domain.domain_jproc);
 }
 
 void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int &iproc, int &jproc) {
@@ -336,7 +334,7 @@ void Grid::parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data) 
     // Fourth line : depth
     ss >> depth;
 
-    assert(numrows * numcols == geometry_data.size());
+    assert(geometry_data.size() == numrows * numcols);
 
     // Following lines : data
     for (int col = numcols - 1; col > -1; --col) {

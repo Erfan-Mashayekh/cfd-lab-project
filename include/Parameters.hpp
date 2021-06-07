@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PARAMETERS_HPP
+#define PARAMETERS_HPP
+
 #include <mpi.h>
 #include <array>
 
@@ -43,4 +45,4 @@ struct Parameters {
     std::array<double, 4> wall_temp = {0.0, 0.0, 0.0, 0.0}; /* Wall temperature against the wall index */
 };
 
-
+#endif // PARAMETERS_HPP

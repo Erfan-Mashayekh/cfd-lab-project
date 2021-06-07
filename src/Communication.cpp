@@ -2,11 +2,9 @@
 #include <iostream>
 #include <mpi.h>
 
-Communication::Communication(int imax, int jmax, int iproc,  int jproc)
-              :_imax(imax), _jmax(jmax), _iproc(iproc), _jproc(jproc){}
 
 // Initialize communication
-static void init_parallel(int argn, char** args, int &my_rank, int &comm_size){
+void Communication::init_parallel(int argn, char** args, int &my_rank, int &comm_size){
 
     // start MPI
     MPI_Init(&argn, &args);
@@ -19,15 +17,31 @@ static void init_parallel(int argn, char** args, int &my_rank, int &comm_size){
 
 }
 
-// Finalize communication
-static void finalize() { 
-    // Finalize MPI: Wait until all ranks are here to safely exit
+// Barrier method to synchronise
+void Communication::barrier() {
+
     MPI_Barrier(MPI_COMM_WORLD);
+}
+
+// Finalize communication
+void Communication::finalize() { 
+    // Finalize MPI: Wait until all ranks are here to safely exit
+    Communication::barrier();
+
     MPI_Finalize(); 
 }
 
+// Broadcast method
+void Communication::broadcast(void *buffer, int count, MPI_Datatype datatype, int root){
+
+    MPI_Bcast(buffer, count, datatype, root, MPI_COMM_WORLD);
+
+}
+
+
 // Send/Receive the data using this communicator
-void Communication::communicate(Matrix<double> &field, const int &my_rank) {
+void Communication::communicate(Matrix<double> &field, const int &imax, const int &jmax, 
+                                        const int &iproc, const int &jproc, const int &my_rank) {
     
     void* data;
     MPI_Datatype datatype = MPI_DOUBLE;
@@ -35,17 +49,17 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
     MPI_Comm communicator = MPI_COMM_WORLD;
 
     // Send to the right subdomain
-    if ( (my_rank + 1) % _iproc != 0 ){
+    if ( (my_rank + 1) % iproc != 0 ){
 
-        data = field.get_col(_imax).data();
-        int count = field.get_col(_imax).size();
+        data = field.get_col(imax).data();
+        int count = field.get_col(imax).size();
         int destination = my_rank + 1;   
 
         MPI_Send(data, count, datatype, destination, tag, communicator);
     }
 
     // Receive from the left
-    if ( my_rank % _iproc != 0 ){
+    if ( my_rank % iproc != 0 ){
         
         int count = field.get_col(0).size();
         int source = my_rank - 1;
@@ -64,7 +78,7 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Send to the Left subdomain
-    if ( (my_rank) % _iproc != 0 ){
+    if ( (my_rank) % iproc != 0 ){
 
         data = field.get_col(1).data();
         int count = field.get_col(1).size();
@@ -74,9 +88,9 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
     }
 
     // Receive from the right
-    if ( (my_rank + 1) % _iproc != 0 ){
+    if ( (my_rank + 1) % iproc != 0 ){
         
-        int count = field.get_col(_imax + 1).size();
+        int count = field.get_col(imax + 1).size();
         int source = my_rank + 1;
         MPI_Status* status = MPI_STATUS_IGNORE;
 
@@ -87,26 +101,26 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
         data = &vec;
         auto *voidToVector = reinterpret_cast< std::vector<double>* >(data);
 
-        field.set_col((*voidToVector), _imax + 1);
+        field.set_col((*voidToVector), imax + 1);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
    // Send to the Top subdomain
-    if ( my_rank - _iproc >= 0 ){
+    if ( my_rank - iproc >= 0 ){
 
-        data = field.get_row(_jmax).data();
-        int count = field.get_row(_jmax).size();
-        int destination = my_rank - _iproc;   
+        data = field.get_row(jmax).data();
+        int count = field.get_row(jmax).size();
+        int destination = my_rank - iproc;   
 
         MPI_Send(data, count, datatype, destination, tag, communicator);
     }
 
     // Receive from the Bottom subdomain
-    if ( my_rank < _iproc * _jproc -_iproc ){
+    if ( my_rank < iproc * jproc - iproc ){
         
         int count = field.get_row(0).size();
-        int source = my_rank + _iproc;
+        int source = my_rank + iproc;
         MPI_Status* status = MPI_STATUS_IGNORE;
 
         MPI_Recv(data, count, datatype, source,tag, communicator, status);
@@ -122,20 +136,20 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
     MPI_Barrier(MPI_COMM_WORLD);
 
    // Send to the Bottom subdomain
-    if ( my_rank < _iproc * _jproc -_iproc ){
+    if ( my_rank < iproc * jproc - iproc ){
 
         data = field.get_row(1).data();
         int count = field.get_row(1).size();
-        int destination = my_rank + _iproc;   
+        int destination = my_rank + iproc;   
 
         MPI_Send(data, count, datatype, destination, tag, communicator);
     }
 
     // Receive from the Top subdomain
-    if ( my_rank - _iproc >= 0 ){
+    if ( my_rank - iproc >= 0 ){
         
-        int count = field.get_row(_jmax + 1).size();
-        int source = my_rank - _iproc;
+        int count = field.get_row(jmax + 1).size();
+        int source = my_rank - iproc;
         MPI_Status* status = MPI_STATUS_IGNORE;
 
         MPI_Recv(data, count, datatype, source,tag, communicator, status);
@@ -145,7 +159,7 @@ void Communication::communicate(Matrix<double> &field, const int &my_rank) {
         data = &vec;
         auto *voidToVector = reinterpret_cast< std::vector<double>* >(data);
 
-        field.set_row((*voidToVector), _jmax + 1);
+        field.set_row((*voidToVector), jmax + 1);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CELL_HPP
+#define CELL_HPP
 
 #include <array>
 #include <vector>
@@ -99,3 +100,5 @@ class Cell {
     /// SOUTEAST
     std::array<Cell *, 6> _neighbours;
 };
+
+#endif // CELL_HPP

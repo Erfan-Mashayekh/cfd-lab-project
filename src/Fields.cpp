@@ -1,4 +1,5 @@
 #include "Fields.hpp"
+#include "Grid.hpp"
 
 #include <algorithm>
 #include <iostream>
