@@ -348,8 +348,7 @@ void Case::simulate() {
 
     // initialization
     double t = 0.0;
-    double dt_sub = _field.dt();
-    double = dt;
+    double dt = _field.dt();
     int timestep = 0;
     double step = 0;
     // time loop
@@ -395,7 +394,7 @@ void Case::simulate() {
             
             _communication.communicate(_field.p_matrix(), _my_rank);
             MPI_Barrier(MPI_COMM_WORLD);
-            res = _communication.reduce_sum(res_sub);
+            res = Communication::reduce_sum(res_sub);
 
 
             // Increment the iteration counter
@@ -422,17 +421,18 @@ void Case::simulate() {
         timestep++;
 
         // Calculate dt for adaptive time stepping
-        dt_sub = _field.calculate_dt(_grid, _energy_eq);
+        dt = _field.calculate_dt(_grid, _energy_eq);
         MPI_Barrier(MPI_COMM_WORLD);
-        dt = _communication.reduce_min(dt_sub);
+        dt = Communication::reduce_min(dt);
 
-        // Output the vtk every 1s
-        if (t >= step + _output_freq) {
-            step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
-            output_vtk(step);
-        }
-     
+        if (_my_rank == 0){
+            // Output the vtk every 1s
+            if (t >= step + _output_freq) {
+                step = step + _output_freq;
+                std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
+                output_vtk(step);
+            }
+        }    
     }
 
     // Output the final VTK file

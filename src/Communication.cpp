@@ -6,7 +6,7 @@ Communication::Communication(int imax, int jmax, int iproc,  int jproc)
               :_imax(imax), _jmax(jmax), _iproc(iproc), _jproc(jproc){}
 
 // Initialize communication
-static void init_parallel(int argn, char** args, int &my_rank, int &comm_size){
+void Communication::init_parallel(int argn, char** args, int &my_rank, int &comm_size){
 
     // start MPI
     MPI_Init(&argn, &args);
@@ -20,7 +20,7 @@ static void init_parallel(int argn, char** args, int &my_rank, int &comm_size){
 }
 
 // Finalize communication
-static void finalize() { 
+void Communication::finalize() { 
     // Finalize MPI: Wait until all ranks are here to safely exit
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize(); 
@@ -163,7 +163,7 @@ double Communication::reduce_min(double &value) {
     int root = 0;
     MPI_Comm communicator = MPI_COMM_WORLD;
 
-    MPI_Reduce( &value, recv_data, count, datatype, op, root, communicator);
+    MPI_Reduce(&value, recv_data, count, datatype, op, root, communicator);
 
     // TODO: check the conversion
     double result = *(double*)recv_data;
