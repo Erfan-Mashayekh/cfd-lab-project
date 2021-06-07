@@ -105,7 +105,7 @@ class Grid {
   private:
 
     /// Build cell data structures with given geometrical data
-    void assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int &iproc, int &jproc);
+    void assign_cell_types(Matrix<int> &geometry_data, const int& my_rank);
     /// Extract geometry from pgm file and create geometrical data
     void parse_geometry_file(std::string filedoc, Matrix<int> &geometry_data);
 

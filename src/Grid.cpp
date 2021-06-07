@@ -292,18 +292,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank, int
                     _cells(i, j).add_border(border_position::TOP);
                 }
             }
-        }
-
-    for (int i = 1; i < _domain.size_x + 1; ++i) {
-        for (int j = 1; j < _domain.size_y + 1; ++j) {
-        
-            std::vector<border_position> border_pos = _cells(i, j).borders();
-            
-            if(border_position->size() == 3 && cell.type == cell_type::FLUID){
-                    _cells(i, j) = Cell(i, j, cell_type::GHOST);
-                    _ghost_cells.push_back(&_cells(i, j));
-            }
-        }
+        }z
     }
 
     /*******************************************
