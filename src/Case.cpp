@@ -355,11 +355,14 @@ void Case::simulate() {
     // time loop
     while (t < _t_end) {
 
+        std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
+
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
+        std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
         if(_energy_eq){
             for (auto &boundary : _boundaries) {
@@ -375,7 +378,7 @@ void Case::simulate() {
 
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
-
+        
         Communication::barrier();
 
         Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
@@ -558,8 +561,11 @@ void Case::build_domain(Domain &domain, double xlength, double ylength, int imax
     int x_proc = _my_rank % iproc;
     int y_proc = std::floor(_my_rank / iproc);
 
-    int max_partition_size_x = std::floor(imax_domain / iproc) + 1;
-    int max_partition_size_y = std::floor(jmax_domain / jproc) + 1;
+    int max_partition_size_x = (imax_domain % iproc) ? std::floor(imax_domain / iproc) + 1 : (imax_domain / iproc);
+    int max_partition_size_y = (jmax_domain % jproc) ? std::floor(jmax_domain / jproc) + 1 : (jmax_domain / jproc);
+
+    domain.max_size_x = max_partition_size_x;
+    domain.max_size_y = max_partition_size_y;   
 
     int residual_partition_size_x = imax_domain - max_partition_size_x * (iproc - 1);
     int residual_partition_size_y = jmax_domain - max_partition_size_y * (jproc - 1);
