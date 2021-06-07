@@ -356,13 +356,13 @@ void Case::simulate() {
     while (t < _t_end) {
 
         std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
-
+        Communication::barrier();
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
-
-        std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
+        Communication::barrier();
+        // std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
         if(_energy_eq){
             for (auto &boundary : _boundaries) {
