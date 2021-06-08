@@ -54,7 +54,9 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_l_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_col(recv_l_buf, domain.imin);
+    if( left != MPI_PROC_NULL ){
+        field.set_col(recv_l_buf, domain.imin);
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -69,8 +71,11 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_col(recv_r_buf, domain.imax - 1 - shift);
+    if( right != MPI_PROC_NULL ){
+        field.set_col(recv_r_buf, domain.imax - 1 - shift);
+    }
 
+    MPI_Barrier(MPI_COMM_WORLD);
 
 /*******************************************************************
  *******************************************************************/
@@ -88,7 +93,9 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_row(recv_u_buf, domain.jmin);
+    if( up != MPI_PROC_NULL ){
+        field.set_row(recv_u_buf, domain.jmin);
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -102,7 +109,9 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_row(recv_d_buf, domain.jmax - 1 - shift);
+    if( down != MPI_PROC_NULL ){
+        field.set_row(recv_d_buf, domain.jmax - 1 - shift);
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
