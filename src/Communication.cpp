@@ -60,37 +60,39 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
     if ((my_rank + 1) % iproc != 0) {
 
         data0 = field.get_col(imax - 2).data();
-        std::cout << std::endl << "Get col after send to right subdomain is done" << std::endl;
+       // std::cout << std::endl << "Get col after send to right subdomain is done" << std::endl;
 
         int count = field.get_col(imax - 2).size();
         int destination = my_rank + 1;
 
-        //     double *data0new = (double *)data0;
-        //    for(int i=0;i<count;i++){
+        double *data0new = (double *)data0;
+        double bufferarray1[count];
 
-        //        std::cout<<*(data0new+i)<<std::endl;
-        //    }
+        for (int i = 0; i < count; i++) {
+            bufferarray1[i] = (double)*(data0new + i);
+            //std::cout << *(data0new + i) << std::endl;
+        }
 
         //     std::cout << std::endl << "Count is " << count << " It should be 50!!! " << std::endl;
         // std::cout << std::endl<< "The size of receive is " << *voidToVector.size() << " It should be 50!!! " <<
         // std::endl;
 
-        MPI_Send(data0, count, datatype, destination, tag, communicator);
+        MPI_Send(&bufferarray1, count, datatype, destination, tag, communicator);
     }
 
-        MPI_Barrier(MPI_COMM_WORLD);
-
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Receive from the left
     if (my_rank % iproc != 0) {
 
         int count = field.get_col(0).size();
-        std::cout << std::endl << "Get col after receive from the left subdomain is done" << std::endl;
+       // std::cout << std::endl << "Get col after receive from the left subdomain is done" << std::endl;
 
         int source = my_rank - 1;
         MPI_Status *status = MPI_STATUS_IGNORE;
 
-        MPI_Recv(data1, count, datatype, source, tag, communicator, status);
+        double bufferarray2[count];
+        MPI_Recv(&bufferarray2, count, datatype, source, tag, communicator, status);
 
         // TODO: Check the Casting resluts
         // std::vector<double> vec;
@@ -105,8 +107,8 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         // }
         //     std::cout << std::endl << "Count is " << count << " It should be 50!!! " << std::endl;
 
-        double *data1new = (double *)data1;
-        vector<double> values(data1new, data1new + count);
+        // double *data1new = (double *)data1;
+        vector<double> values(bufferarray2, bufferarray2 + count);
         // std::cout << std::endl << "Are you here tho?" << std::endl;
 
         // std::cout << std::endl << "The size of receive is " << (values).size() << std::endl;
@@ -121,48 +123,53 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
         data2 = field.get_col(1).data();
 
-        std::cout << std::endl << "Get col after send to the left subdomain is done" << std::endl;
+        //std::cout << std::endl << "Get col after send to the left subdomain is done" << std::endl;
 
         int count = field.get_col(1).size();
         int destination = my_rank - 1;
 
-        MPI_Send(data2, count, datatype, destination, tag, communicator);
+        double *data2new = (double *)data2;
+        double bufferarray3[count];
+
+        for (int i = 0; i < count; i++) {
+            bufferarray3[i] = (double)*(data2new + i);
+          //  std::cout << *(data2new + i) << std::endl;
+        }
+
+        MPI_Send(&bufferarray3, count, datatype, destination, tag, communicator);
     }
 
-        MPI_Barrier(MPI_COMM_WORLD);
-
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Receive from the right
     if ((my_rank + 1) % iproc != 0) {
 
         int count = field.get_col(imax - 1).size();
-        std::cout << std::endl << "Get col after receive from the right subdomain is done" << std::endl;
+       // std::cout << std::endl << "Get col after receive from the right subdomain is done" << std::endl;
 
         int source = my_rank + 1;
         MPI_Status *status = MPI_STATUS_IGNORE;
 
- 
-        MPI_Recv(data3, count, datatype, source, tag, communicator, status);
-                std::cout << std::endl << "YOU HAVE RECEIVED!" << std::endl;
 
+        double bufferarray4[count];
+        MPI_Recv(&bufferarray4, count, datatype, source, tag, communicator, status);
+       // std::cout << std::endl << "YOU HAVE RECEIVED!" << std::endl;
 
         // for(auto item: *voidToVector){
         //      std::cout << item << " ";
         // }
 
-        double *data3new = (double *)data3;
 
-        for (int i = 0; i < count; i++) {
+        // for (int i = 0; i < count; i++) {
 
-            std::cout << *(data3new + i) << std::endl;
-        }
+        //     std::cout << *(data3new + i) << std::endl;
+        // }
 
-        vector<double> values(data3new, data3new + count);
+        vector<double> values(bufferarray4, bufferarray4 + count);
 
-        std::cout << std::endl << "The size of receive is " << values.size() << std::endl;
+        //std::cout << std::endl << "The size of receive is " << values.size() << std::endl;
 
         field.set_col(values, imax - 1);
-
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

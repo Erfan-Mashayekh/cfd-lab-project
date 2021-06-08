@@ -356,14 +356,14 @@ void Case::simulate() {
     // time loop
     while (t < _t_end) {
 
-        std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
+        //std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
 
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
-        std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
+        //std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
         // if (_energy_eq) {
         //     for (auto &boundary : _boundaries) {
@@ -380,7 +380,7 @@ void Case::simulate() {
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
 
-        std::cout << std::endl << "This show after calculate_fluxes" << std::endl;
+        //std::cout << std::endl << "This show after calculate_fluxes" << std::endl;
 
         Communication::barrier();
 
@@ -390,7 +390,7 @@ void Case::simulate() {
         Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
         Communication::barrier();
 
-        std::cout << "Start Calculate rs " << _my_rank << std::endl;
+        //std::cout << "Start Calculate rs " << _my_rank << std::endl;
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
@@ -441,11 +441,15 @@ void Case::simulate() {
 
         Communication::barrier();
         Communication::reduce_min(dt_proc, dt);
-
+        
+        //std::cout<<"out freq = "<<_output_freq<<std::endl;
         // Output the vtk every 1s
-        if (t >= step + _output_freq) {
+
+        //Please repair this Binu & Erfan, I changed it but do not know how to get it back.
+        
+        if ((timestep % 100) == 0) {
             step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
+            std::cout << "Printing vtk file at t = " << t << "s" << std::endl;
             output_vtk(step);
         }
     }
