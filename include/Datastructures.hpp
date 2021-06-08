@@ -76,7 +76,7 @@ template <typename T> class Matrix {
     size_t size() const { return _container.size(); }
 
     /// get the given row of the matrix
-    std::vector<double> get_row(int row) {
+    std::vector<T> get_row(int row) {
         std::vector<T> row_data(_imax, -1);
         for (int i = 0; i < _imax; ++i) {
             row_data.at(i) = _container.at(i + _imax * row);
@@ -85,7 +85,7 @@ template <typename T> class Matrix {
     }
 
     /// get the given column of the matrix
-    std::vector<double> get_col(int col) {
+    std::vector<T> get_col(int col) {
         std::vector<T> col_data(_jmax, -1);
         for (int i = 0; i < _jmax; ++i) {
             col_data.at(i) = _container.at(col + i * _imax);
@@ -94,14 +94,14 @@ template <typename T> class Matrix {
     }
 
     /// set the given column of matrix to given vector
-    void set_col(const std::vector<double> &vec, int col) {
+    void set_col(const std::vector<T> &vec, int col) {
         for (int i = 0; i < _jmax; ++i) {
             _container.at(col + i * _imax) = vec.at(i);
         }
     }
 
     /// set the given row of matrix to given vector
-    void set_row(const std::vector<double> &vec, int row) {
+    void set_row(const std::vector<T> &vec, int row) {
         for (int i = 0; i < _imax; ++i) {
             _container.at(i + row * _imax) = vec.at(i);
         }

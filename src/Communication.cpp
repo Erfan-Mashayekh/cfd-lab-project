@@ -38,163 +38,32 @@ void Communication::broadcast(void *buffer, int count, MPI_Datatype datatype, in
 
 }
 
-
 // Send/Receive the data using this communicator
 void Communication::communicate(Matrix<double> &field, const Domain &domain, const int &my_rank) {
-    
-    int iproc = domain.iproc;
-    int jproc = domain.jproc;
-    int imax = domain.imax;
-    int jmax = domain.jmax;
 
-    void* data0;
-    void* data1;
-    void* data2;
-    void* data3;
-    void* data4;
-    void* data5;
-    void* data6;
-    void* data7;
+    int left = (my_rank % domain.iproc == 0) ? MPI_PROC_NULL : my_rank - 1;
+    int right = ((my_rank + 1) % domain.iproc == 0) ? MPI_PROC_NULL : my_rank + 1;
 
-    MPI_Datatype datatype = MPI_DOUBLE;
-    int tag = 1;
-    MPI_Comm communicator = MPI_COMM_WORLD;
+    std::vector<double> recv_buf(domain.jmax, 0.0);
+    std::vector<double> send_buf = field.get_col(domain.imax-2);
 
-    // Send to the right subdomain
-    if ( (my_rank + 1) % iproc != 0 ){
+    // Send/Receive Left-right
+    MPI_Sendrecv ( send_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
+                   recv_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
+                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-        data0 = field.get_col(imax-2).data();
-        int count = field.get_col(imax-2).size();
-        int destination = my_rank + 1;   
-
-        MPI_Send(data0, count, datatype, destination, tag, communicator);
-    }
-
-    // Receive from the left
-    if ( my_rank % iproc != 0 ){
-        
-        int count = field.get_col(0).size();
-        int source = my_rank - 1;
-        MPI_Status* status = MPI_STATUS_IGNORE;
-
-        MPI_Recv(data1, count, datatype, source,tag, communicator, status);
-
-        // TODO: Check the Casting resluts
-        std::vector<double> vec;
-        data1 = &vec;
-        auto *voidToVector = static_cast< std::vector<double>* >(data1);
-
-        // for(auto item: *voidToVector){
-        //     std::cout << item << " ";
-        // }
-
-        field.set_col((*voidToVector), 0);
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // Send to the Left subdomain
-    if ( (my_rank) % iproc != 0 ){
-
-        data2 = field.get_col(1).data();
-        int count = field.get_col(1).size();
-        int destination = my_rank - 1;   
-
-        MPI_Send(data2, count, datatype, destination, tag, communicator);
-    }
-
-    // Receive from the right
-    if ( (my_rank + 1) % iproc != 0 ){
-        
-        int count = field.get_col(imax -1).size();
-        int source = my_rank + 1;
-        MPI_Status* status = MPI_STATUS_IGNORE;
-
-        MPI_Recv(data3, count, datatype, source,tag, communicator, status);
-
-        // TODO: Check the Casting resluts
-        std::vector<double> vec;
-        data3 = &vec;
-        auto *voidToVector = static_cast< std::vector<double>* >(data3);
-
-        // for(auto item: *voidToVector){
-        //     std::cout << item << " ";
-        // }
-
-        field.set_col((*voidToVector), imax - 1);
-
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-   // // Send to the Top subdomain
-   //  if ( my_rank - iproc >= 0 ){
-
-   //      data4 = field.get_row(jmax - 2).data();
-   //      int count = field.get_row(jmax - 2).size();
-   //      int destination = my_rank - iproc;   
-
-   //      MPI_Send(data4, count, datatype, destination, tag, communicator);
-   //  }
-
-   //  // Receive from the Bottom subdomain
-   //  if ( my_rank < iproc * jproc - iproc ){
-        
-   //      int count = field.get_row(0).size();
-   //      int source = my_rank + iproc;
-   //      MPI_Status* status = MPI_STATUS_IGNORE;
-
-   //      MPI_Recv(data5, count, datatype, source,tag, communicator, status);
-
-   //      // TODO: Check the Casting resluts
-   //      std::vector<double> vec;
-   //      data5 = &vec;
-   //      auto *voidToVector = reinterpret_cast< std::vector<double>* >(data5);
-
-   //      field.set_row((*voidToVector), 0);
-   //  }
-
-   //  MPI_Barrier(MPI_COMM_WORLD);
-
-   // // Send to the Bottom subdomain
-   //  if ( my_rank < iproc * jproc - iproc ){
-
-   //      data6 = field.get_row(1).data();
-   //      int count = field.get_row(1).size();
-   //      int destination = my_rank + iproc;   
-
-   //      MPI_Send(data6, count, datatype, destination, tag, communicator);
-   //  }
-
-   //  // Receive from the Top subdomain
-   //  if ( my_rank - iproc >= 0 ){
-        
-   //      int count = field.get_row(jmax - 1).size();
-   //      int source = my_rank - iproc;
-   //      MPI_Status* status = MPI_STATUS_IGNORE;
-
-   //      MPI_Recv(data7, count, datatype, source,tag, communicator, status);
-
-   //      // TODO: Check the Casting resluts
-   //      std::vector<double> vec;
-   //      data7 = &vec;
-   //      auto *voidToVector = reinterpret_cast< std::vector<double>* >(data7);
-
-   //      field.set_row((*voidToVector), jmax - 1);
-   //  }
-
-   //  MPI_Barrier(MPI_COMM_WORLD);
-
+    field.set_col(recv_buf, 0);
 }
 
-// // Find and return the minimum value over all ranks
+
+// Find and return the minimum value over all ranks
 void Communication::reduce_min(double &input, double &output) {
 
     MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 }
 
 
-// // Compute total sum over all ranks
+// Compute total sum over all ranks
 void Communication::reduce_sum(double &input, double &output) {
 
     MPI_Allreduce(&input, &output, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
