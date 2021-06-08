@@ -15,7 +15,7 @@ public:
     static void barrier();
     static void finalize();
     static void broadcast(void *buffer, int count, MPI_Datatype datatype, int root);
-    static void communicate(Matrix<double> &field, const Domain &domain, const int &my_rank) ;
+    static void communicate(Matrix<double> &field, const Domain &domain, const int &my_rank, const int &shift) ;
     static void reduce_sum(double &input, double &output);
     static void reduce_min(double &input, double &output);
 

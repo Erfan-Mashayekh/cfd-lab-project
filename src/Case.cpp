@@ -369,7 +369,7 @@ void Case::simulate() {
 
             Communication::barrier();
 
-            Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank);
+            Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank, 0);
         }
 
         // Calculate Fn and Gn
@@ -377,8 +377,8 @@ void Case::simulate() {
         
         Communication::barrier();
 
-        Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
-        Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
+        Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank, 1);
+        Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
@@ -395,7 +395,7 @@ void Case::simulate() {
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
             
-            Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank);
+            Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank, 0);
 
             Communication::barrier();
 
@@ -418,8 +418,8 @@ void Case::simulate() {
         _field.calculate_velocities(_grid);
 
         Communication::barrier();
-        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank);
-        Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank);
+        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);
+        Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate new time
         t = t + dt;
@@ -460,15 +460,15 @@ void Case::output_vtk(int timestep) {
     double dx = _grid.dx();
     double dy = _grid.dy();
 
-    double x = _grid.domain().imin * dx;
-    double y = _grid.domain().jmin * dy;
+    double x = (_grid.domain().imin + (_my_rank % _grid.domain().iproc) * _grid.domain().max_size_x )* dx;
+    double y = (_grid.domain().jmin + std::floor(_my_rank / _grid.domain().iproc) * _grid.domain().max_size_y) * dy;
 
     { y += dy; }
     { x += dx; }
 
     double z = 0;
     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
-        x = _grid.domain().size_x * (_my_rank % _grid.domain().iproc);;
+        x = (_grid.domain().imin + (_my_rank % _grid.domain().iproc) * _grid.domain().max_size_x )* dx;
         { x += dx; }
         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
             points->InsertNextPoint(x, y, z);

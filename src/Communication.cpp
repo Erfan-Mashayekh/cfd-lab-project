@@ -39,7 +39,7 @@ void Communication::broadcast(void *buffer, int count, MPI_Datatype datatype, in
 }
 
 // Send/Receive the data using this communicator
-void Communication::communicate(Matrix<double> &field, const Domain &domain, const int &my_rank) {
+void Communication::communicate(Matrix<double> &field, const Domain &domain, const int &my_rank, const int &shift) {
 
     int left   =       (my_rank % domain.iproc == 0) ? MPI_PROC_NULL : my_rank - 1;
     int right  = ((my_rank + 1) % domain.iproc == 0) ? MPI_PROC_NULL : my_rank + 1;
@@ -69,7 +69,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_col(recv_r_buf, domain.imax - 1);
+    field.set_col(recv_r_buf, domain.imax - 1 - shift);
 
 
 /*******************************************************************
