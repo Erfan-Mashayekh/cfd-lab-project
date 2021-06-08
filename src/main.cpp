@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <mpi.h>
+#include <chrono>
 
 #include "Case.hpp"
 #include "Communication.hpp"
@@ -29,7 +30,17 @@ int main(int argn, char **args) {
 
     Communication::barrier();
 
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+
+    start = std::chrono::system_clock::now();
+
     problem.simulate();
+
+    end = std::chrono::system_clock::now();
+
+    std::chrono::duration<double> elapsed_time = end - start;
+    
+    std::cout << "The computation took  " << elapsed_time.count() << " seconds\n";
 
     Communication::finalize();
 }

@@ -58,7 +58,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         field.set_col(recv_l_buf, domain.imin);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
 
 
@@ -75,7 +75,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         field.set_col(recv_r_buf, domain.imax - 1 - shift);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
 /*******************************************************************
  *******************************************************************/
@@ -97,7 +97,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         field.set_row(recv_u_buf, domain.jmin);
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
 
 
