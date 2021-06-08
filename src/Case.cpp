@@ -355,14 +355,10 @@ void Case::simulate() {
     // time loop
     while (t < _t_end) {
 
-        std::cout << "simulation timestep = " << t << " rank " << _my_rank << std::endl;
-        Communication::barrier();
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
-        Communication::barrier();
-        // std::cout << "Start Calculate fluxes " << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
         if(_energy_eq){
             for (auto &boundary : _boundaries) {
@@ -384,7 +380,6 @@ void Case::simulate() {
         Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
         Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
 
-        std::cout << "Start Calculate rs " << _my_rank << std::endl;
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
 
