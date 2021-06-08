@@ -48,7 +48,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
  // ------------------------Send Right---------------------------------
     std::vector<double> recv_l_buf(domain.jmax, 0.0);
-    std::vector<double> send_r_buf = field.get_col(domain.imax - 2 - shift);
+    std::vector<double> send_r_buf = field.get_col(domain.imax - 2);
 
     MPI_Sendrecv ( send_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
                    recv_l_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
