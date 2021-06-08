@@ -3,8 +3,8 @@
 #--------------------------------------------
 geo_file     FluidTrap.pgm
 
-iproc       1
-jproc       1
+iproc       2
+jproc       3
 
 #--------------------------------------------
 #            size of the domain             
