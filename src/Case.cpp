@@ -468,7 +468,7 @@ void Case::output_vtk(int timestep) {
 
     double z = 0;
     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
-        x = _grid.domain().imin * dx;
+        x = _grid.domain().size_x * (_my_rank % _grid.domain().iproc);;
         { x += dx; }
         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
             points->InsertNextPoint(x, y, z);

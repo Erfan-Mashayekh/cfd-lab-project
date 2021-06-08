@@ -290,6 +290,16 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         }
     }
 
+    // if(my_rank == 1){
+    //     for (int col =  _domain.jmax - 1;  _domain.jmax > -1; --col) {
+    //         for (size_t row = 0; row < _domain.imax; ++row) {
+    //             std::cout << (int) _cells(row, col).type() << " ";
+    //         }
+    //         std::cout << std::endl;
+    //     }
+    // }
+
+
     /*******************************************
      * Terminate if Forbidden cells are present 
      ******************************************/
