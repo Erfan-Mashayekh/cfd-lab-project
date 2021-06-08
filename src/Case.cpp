@@ -370,7 +370,7 @@ void Case::simulate() {
 
             Communication::barrier();
 
-            Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank);
+            Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank, 0);
         }
 
         // Calculate Fn and Gn
@@ -378,8 +378,8 @@ void Case::simulate() {
         
         Communication::barrier();
 
-        Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank);
-        Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank);
+        Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank, 1);
+        Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate Right-hand side of the pressure eq.
         _field.calculate_rs(_grid);
@@ -396,7 +396,7 @@ void Case::simulate() {
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
             
-            Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank);
+            Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank, 0);
 
             Communication::barrier();
 
@@ -419,8 +419,8 @@ void Case::simulate() {
         _field.calculate_velocities(_grid);
 
         Communication::barrier();
-        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank);
-        Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank);
+        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);
+        Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate new time
         t = t + dt;
