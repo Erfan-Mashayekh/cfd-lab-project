@@ -461,15 +461,15 @@ void Case::output_vtk(int timestep) {
     double dx = _grid.dx();
     double dy = _grid.dy();
 
-    double x = _grid.domain().imin * dx;
-    double y = _grid.domain().jmin * dy;
+    double x = (_grid.domain().imin + (_my_rank % _grid.domain().iproc) * _grid.domain().max_size_x )* dx;
+    double y = (_grid.domain().jmin + std::floor(_my_rank / _grid.domain().iproc) * _grid.domain().max_size_y) * dy;
 
     { y += dy; }
     { x += dx; }
 
     double z = 0;
     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
-        x = _grid.domain().imin * dx;
+        x = (_grid.domain().imin + (_my_rank % _grid.domain().iproc) * _grid.domain().max_size_x )* dx;
         { x += dx; }
         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
             points->InsertNextPoint(x, y, z);
