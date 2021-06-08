@@ -394,6 +394,7 @@ void Case::simulate() {
             
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
+                  
                                                                             // Staggered shift     
             Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank, 0);
 
@@ -438,7 +439,7 @@ void Case::simulate() {
         if (t >= step + _output_freq) {
             step = step + _output_freq;
             if(_my_rank == 0){
-                std::cout << "Printing vtk file at t = " << step << "s on Rank = " << _my_rank << std::endl;
+                std::cout << "Printing vtk file at t = " << step << "s on Rank = " << _my_rank << ". Number of Iterations for convergence is " << it <<std::endl;
             }
             output_vtk(step);
         }

@@ -87,7 +87,7 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
   // ----------------------- Send down ------------------------------
     std::vector<double> recv_u_buf(domain.imax, 0.0);
-    std::vector<double> send_d_buf = field.get_row(domain.jmax - 2 - shift);
+    std::vector<double> send_d_buf = field.get_row(domain.jmax - 2);
 
     MPI_Sendrecv ( send_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
                    recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
@@ -113,9 +113,6 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         field.set_row(recv_d_buf, domain.jmax - 1 - shift);
     }
 
-    if( down != MPI_PROC_NULL ){
-        field.set_row(recv_d_buf, domain.jmax - 1 - shift);
-    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 

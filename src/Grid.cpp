@@ -86,7 +86,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     bool ghost_corners_1 = false;
     // Subdomain Ghost cell in parallel computation 
     for (int i = 0; i < _domain.size_x + 2; ++i) {
-        if(_cells(i, 0).type() == cell_type::FLUID){
+        if(_cells(i, 0).type() == cell_type::FLUID){            
             _cells(i, 0) = Cell(i, 0, cell_type::GHOST);
             // Make the corners of the ghost cell sides 'DEFAULT'
             if(not ghost_corners_0){
@@ -94,7 +94,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
                 _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::DEFAULT);
                 ghost_corners_0 = true;
             }
-        }
+        } 
         if(_cells(i, _domain.size_y + 1).type() == cell_type::FLUID){
             _cells(i, _domain.size_y + 1) = Cell(i, _domain.size_y + 1, cell_type::GHOST);
             // Make the corners of the ghost cell sides 'DEFAULT'
@@ -103,7 +103,17 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
                 _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::DEFAULT);
                 ghost_corners_1 = true;
             }
-        }
+        } 
+    }
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+            if(_cells(i - 1, 0).type() == cell_type::GHOST &&
+           _cells(i, 0).type() == cell_type::FIXED_WALL ){
+            _cells(i, 0) = Cell(i, 0, cell_type::GHOST);
+        }      
+        if(_cells(i - 1, _domain.size_y + 1).type() == cell_type::FLUID&&
+           _cells(i, _domain.size_y + 1).type() == cell_type::FIXED_WALL ){
+           _cells(i, _domain.size_y + 1) = Cell(i, _domain.size_y + 1, cell_type::GHOST);
+        } 
     }
 
     ghost_corners_0 = false;

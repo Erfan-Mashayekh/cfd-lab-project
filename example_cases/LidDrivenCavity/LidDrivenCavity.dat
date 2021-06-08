@@ -3,8 +3,8 @@
 #--------------------------------------------
 geo_file   LidDrivenCavity.pgm
 
-iproc       2
-jproc       1
+iproc       1
+jproc       2
 
 #--------------------------------------------
 #            size of the domain             
