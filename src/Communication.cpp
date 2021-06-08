@@ -48,13 +48,15 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
  // ------------------------Send Right---------------------------------
     std::vector<double> recv_l_buf(domain.jmax, 0.0);
-    std::vector<double> send_r_buf = field.get_col(domain.imax - 2 - shift);
+    std::vector<double> send_r_buf = field.get_col(domain.imax - 2);
 
     MPI_Sendrecv ( send_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
                    recv_l_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_col(recv_l_buf, domain.imin);
+    if (){
+        field.set_col(recv_l_buf, domain.imin);
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -69,42 +71,49 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_col(recv_r_buf, domain.imax - 1 - shift);
+    if (right != MPI_PROC_NULL){
+        field.set_col(recv_r_buf, domain.imax - 1 - shift);
+    }
 
 
 /*******************************************************************
  *******************************************************************/
 
 
-    int up   =               (std::floor(my_rank / domain.iproc) == 0) ? MPI_PROC_NULL : my_rank - domain.iproc;
-    int down = (std::floor(my_rank / domain.iproc) == domain.jproc -1) ? MPI_PROC_NULL : my_rank + domain.iproc;
+//     int up   =               (std::floor(my_rank / domain.iproc) == 0) ? MPI_PROC_NULL : my_rank - domain.iproc;
+//     int down = (std::floor(my_rank / domain.iproc) == domain.jproc - 1) ? MPI_PROC_NULL : my_rank + domain.iproc;
 
 
-  // ----------------------- Send down ------------------------------
-    std::vector<double> recv_u_buf(domain.imax, 0.0);
-    std::vector<double> send_d_buf = field.get_row(domain.jmax - 2 - shift);
+//   // ----------------------- Send down ------------------------------
+//     std::vector<double> recv_u_buf(domain.imax, 0.0);
+//     std::vector<double> send_d_buf = field.get_row(domain.jmax - 2 - shift);
 
-    MPI_Sendrecv ( send_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
-                   recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
-                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+//     MPI_Sendrecv ( send_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
+//                    recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
+//                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    field.set_row(recv_u_buf, domain.jmin);
+//     if (up != MPI_PROC_NULL){
+//         field.set_row(recv_u_buf, domain.jmin);
+//     }
+        
 
-    MPI_Barrier(MPI_COMM_WORLD);
+//     MPI_Barrier(MPI_COMM_WORLD);
 
 
 
-  // ----------------------- Send up ------------------------------
-    std::vector<double> recv_d_buf(domain.imax, 0.0);
-    std::vector<double> send_u_buf = field.get_row(domain.jmin + 1);
+//   // ----------------------- Send up ------------------------------
+//     std::vector<double> recv_d_buf(domain.imax, 0.0);
+//     std::vector<double> send_u_buf = field.get_row(domain.jmin + 1);
 
-    MPI_Sendrecv ( send_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
-                   recv_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
-                   MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+//     MPI_Sendrecv ( send_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
+//                    recv_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
+//                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+//     if (down != MPI_PROC_NULL){
+//         field.set_row(recv_d_buf, domain.jmax - 1 - shift);
+//     }
 
-    field.set_row(recv_d_buf, domain.jmax - 1 - shift);
-
-    MPI_Barrier(MPI_COMM_WORLD);
+//         MPI_Barrier(MPI_COMM_WORLD);
 
 }
 
