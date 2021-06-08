@@ -437,9 +437,9 @@ void Case::simulate() {
         // Output the vtk every 1s
         if (t >= step + _output_freq) {
             step = step + _output_freq;
-             if(_my_rank == 0){
+            if(_my_rank == 0){
                 std::cout << "Printing vtk file at t = " << step << "s on Rank = " << _my_rank << std::endl;
-             }                
+            }
             output_vtk(step);
         }
      
