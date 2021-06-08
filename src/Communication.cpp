@@ -76,13 +76,13 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
  *******************************************************************/
 
 
-    int up   = (std::floor(my_rank / domain.iproc) == 0) ? MPI_PROC_NULL : my_rank - domain.iproc;
+    int up   =            (std::floor(my_rank / domain.iproc) == 0) ? MPI_PROC_NULL : my_rank - domain.iproc;
     int down = (std::floor(my_rank / domain.iproc) == domain.jproc) ? MPI_PROC_NULL : my_rank + domain.iproc;
 
 
   // ----------------------- Send down ------------------------------
     std::vector<double> recv_u_buf(domain.imax, 0.0);
-    std::vector<double> send_d_buf = field.get_row(domain.jmax - 2);
+    std::vector<double> send_d_buf = field.get_row(domain.jmax - 2 - shift);
 
     MPI_Sendrecv ( send_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
                    recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
