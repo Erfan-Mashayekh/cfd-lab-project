@@ -109,9 +109,6 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
                    recv_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    if( down != MPI_PROC_NULL ){
-        field.set_row(recv_d_buf, domain.jmax - 1 - shift);
-    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
