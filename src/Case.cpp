@@ -367,8 +367,8 @@ void Case::simulate() {
 
             _field.calculate_temperature(_grid);
 
-            Communication::barrier();
-
+            Communication::barrier();       
+                                                                           // Staggered shift     
             Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank, 0);
         }
 
@@ -376,7 +376,7 @@ void Case::simulate() {
         _field.calculate_fluxes(_grid, _energy_eq);
         
         Communication::barrier();
-
+                                                                            // Staggered shift     
         Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank, 1);
         Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank, 1);
 
@@ -394,7 +394,7 @@ void Case::simulate() {
             
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
-            
+                                                                            // Staggered shift     
             Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank, 0);
 
             Communication::barrier();
@@ -418,7 +418,8 @@ void Case::simulate() {
         _field.calculate_velocities(_grid);
 
         Communication::barrier();
-        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);
+                                                                            // Staggered shift     
+        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);   
         Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate new time
@@ -434,9 +435,9 @@ void Case::simulate() {
         Communication::reduce_min(dt_proc, dt);
 
         // Output the vtk every 1s
-        if (t >= step + _output_freq) {
+        if (t >= step + _output_freq && _my_rank == 0) {
             step = step + _output_freq;
-            std::cout << "Printing vtk file at t = " << step << "s" << std::endl;
+            std::cout << "Printing vtk file at t = " << step << "s on Rank = " << _my_rank << std::endl;
             output_vtk(step);
         }
      

@@ -88,6 +88,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     for (int i = 0; i < _domain.size_x + 2; ++i) {
         if(_cells(i, 0).type() == cell_type::FLUID){
             _cells(i, 0) = Cell(i, 0, cell_type::GHOST);
+            // Make the corners of the ghost cell sides 'DEFAULT'
             if(not ghost_corners_0){
                 _cells(0, 0) = Cell(0, 0, cell_type::DEFAULT);
                 _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::DEFAULT);
@@ -96,6 +97,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         }
         if(_cells(i, _domain.size_y + 1).type() == cell_type::FLUID){
             _cells(i, _domain.size_y + 1) = Cell(i, _domain.size_y + 1, cell_type::GHOST);
+            // Make the corners of the ghost cell sides 'DEFAULT'
             if(not ghost_corners_1){
                 _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::DEFAULT);
                 _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::DEFAULT);
@@ -110,6 +112,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     for (int j = 0; j < _domain.size_y + 2; ++j) {
         if(_cells(0, j).type() == cell_type::FLUID){
             _cells(0, j) = Cell(0, j, cell_type::GHOST);
+            // Make the corners of the ghost cell sides 'DEFAULT'
             if(not ghost_corners_0){
                 _cells(0, 0) = Cell(0, 0, cell_type::DEFAULT);
                 _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::DEFAULT);
@@ -118,6 +121,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         }
         if(_cells(_domain.size_x + 1, j).type() == cell_type::FLUID){
             _cells(_domain.size_x + 1, j) = Cell(_domain.size_x + 1, j, cell_type::GHOST);
+            // Make the corners of the ghost cell sides 'DEFAULT'
             if(not ghost_corners_1){
                 _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::DEFAULT);
                 _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::DEFAULT);
@@ -205,15 +209,15 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
         if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::RIGHT);
         }
         if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::LEFT);
         }
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::TOP);
         }
     }
@@ -226,15 +230,15 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         _cells(i, j).set_neighbour(&_cells(i - 1, j), border_position::LEFT);
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
         if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::RIGHT);
         }
         if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::LEFT);
         }
         if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::BOTTOM);
         }
     }
@@ -246,15 +250,15 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
         if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::RIGHT);
         }
         if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::BOTTOM);
         }
         if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::TOP)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::TOP);
         }       
     }
@@ -265,7 +269,7 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         _cells(i, j).set_neighbour(&_cells(i, j - 1), border_position::BOTTOM);
         _cells(i, j).set_neighbour(&_cells(i, j + 1), border_position::TOP);
         if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID || 
-            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
+            _cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::GHOST) {
             _cells(i, j).add_border(border_position::LEFT);
         }
         if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID || 
