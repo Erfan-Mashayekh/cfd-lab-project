@@ -67,6 +67,20 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
         int count = field.get_col(imax-2).size();
         int destination = my_rank + 1;   
 
+        // std::vector<double> vec1;
+        // data0 = &vec1;
+        // auto *voidToVector = static_cast< std::vector<double>* >(data0);
+
+
+        double * arr = (double*)data0 ;
+        // std::cout<< "data size : " << (*voidToVector).size() << std::endl;
+        for (int i=1 ; i <= field.get_col(imax-2).size(); i++){
+            for(int j=1; j<=field.get_row(jmax-2).size(); j++){
+                std::cout << j << " ";
+            }
+            std::cout << std::endl;
+        }
+
         MPI_Send(data0, count, datatype, destination, tag, communicator);
     }
 

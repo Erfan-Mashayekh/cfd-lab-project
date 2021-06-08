@@ -67,7 +67,6 @@ void InflowBoundary::apply(Fields &field){
         field.p(cell->i(), cell->j()) = sum_pressure / border_pos.size();
     }
 
-    std::cout << "Inflow is done" << std::endl;
 }
 
 void OutflowBoundary::apply(Fields &field){
@@ -97,12 +96,9 @@ void OutflowBoundary::apply(Fields &field){
         field.p(cell->i(), cell->j()) = sum_pressure / border_pos.size();
     }
 
-    std::cout << "Outflow is done" << std::endl;
 }
 
 void FixedWallBoundary::apply(Fields &field){
-
-    std::cout << "Fixed wall start" << std::endl;
 
     for(auto const& cell: _cells){
         
@@ -162,18 +158,15 @@ void FixedWallBoundary::apply(Fields &field){
             }
         }
     }
-    // std::cout << "Fixed wall is done" << std::endl;
 }
 
 
 void MovingWallBoundary::apply(Fields &field) {
 
-    std::cout << "Moving wall start" << std::endl;
 
     /* The top wall is a moving wall thus, the velocity on the top wall would be the velocity of the wall itself.*/
 
     for(auto cell: _cells){
-        std::cout << "i: "<< cell->i() << "  j: " << cell->j() << std::endl;
         std::vector<border_position> border_pos = cell->borders();
 
         // Skip the two cells at the corners
@@ -191,7 +184,6 @@ void MovingWallBoundary::apply(Fields &field) {
         field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
         field.p(cell->i(), cell->j()) = field.p(cell->i(), cell->neighbour(border_position::BOTTOM)->j());
     }
-    // std::cout << "Moving wall is done" << std::endl;
 }
 
 void FreeSlipBoundary::apply(Fields &field) {(void)field;}
