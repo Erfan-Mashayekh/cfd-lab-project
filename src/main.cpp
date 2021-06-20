@@ -23,7 +23,7 @@ int main(int argn, char **args) {
 
         exit(EXIT_FAILURE);
     }
-    
+
     std::string file_name{args[1]};
 
     Case problem(file_name, my_rank, comm_size);
@@ -39,7 +39,7 @@ int main(int argn, char **args) {
     end = std::chrono::system_clock::now();
 
     std::chrono::duration<double> elapsed_time = end - start;
-    
+
     std::cout << "The computation took  " << elapsed_time.count() << " seconds\n";
 
     Communication::finalize();

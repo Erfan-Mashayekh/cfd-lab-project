@@ -1,13 +1,13 @@
 #--------------------------------------------
-#           geometry file            
+#           geometry file
 #--------------------------------------------
 geo_file   LidDrivenCavity.pgm
 
 iproc       1
-jproc       2
+jproc       1
 
 #--------------------------------------------
-#            size of the domain             
+#            size of the domain
 #--------------------------------------------
 xlength      1
 ylength      1

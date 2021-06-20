@@ -28,22 +28,22 @@ namespace filesystem = std::filesystem;
 
 
 Case::Case(std::string file_name, int &my_rank, int &comm_size)
-     : _my_rank(my_rank), _comm_size(comm_size) { 
+     : _my_rank(my_rank), _comm_size(comm_size) {
 
-    Parameters input; 
+    Parameters input;
 
-    // create a type for struct input 
+    // create a type for struct input
     const int nitems = 31;
     int blocklengths[nitems] = {1,1,1,1,1, 1,1,1,1,1,
                                 1,1,1,1,1, 1,1,1,1,1,
                                 1,1,1,1,1, 1,1,1,4,4,
                                 4};
 
-    MPI_Datatype types[nitems] = {MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, 
-                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, 
+    MPI_Datatype types[nitems] = {MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
 
-                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, 
-                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, 
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
+                                  MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE, MPI::DOUBLE,
 
                                   MPI::DOUBLE, MPI::INT, MPI::INT, MPI::INT, MPI::INT,
                                   MPI::INT, MPI::INT, MPI::BOOL, MPI::INT, MPI::DOUBLE,
@@ -70,7 +70,7 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
     offsets[14] = offsetof(Parameters, UIN);
     offsets[15] = offsetof(Parameters, VIN);
     offsets[16] = offsetof(Parameters, TIN);
-    offsets[17] = offsetof(Parameters, beta); 
+    offsets[17] = offsetof(Parameters, beta);
     offsets[18] = offsetof(Parameters, alpha);
     offsets[19] = offsetof(Parameters, t_end);
     offsets[20] = offsetof(Parameters, output_freq);
@@ -141,7 +141,7 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
                         else input.energy_eq = false;
                     }
 
-                    /************************************************    
+                    /************************************************
                     * In the following code,
                     * - var reads the 'wall_vel_x' or 'wall_temp_x'
                     * - regex_search for any one/two digit index
@@ -149,8 +149,8 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
                     * - then it checks if the read string contains
                     * 'wal_vel' or 'wall_temp'
                     * - Depending on the type of variable (vel/temp)
-                    * the respective value is stored in the map with 
-                    * value and the idx 
+                    * the respective value is stored in the map with
+                    * value and the idx
                     *************************************************/
                     std::string str_vel = "wall_vel";
                     std::string str_temp = "wall_temp";
@@ -206,8 +206,8 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
     Communication::barrier();
 
     // Set up wall_vel and wall_temp as std::maps
-    std::map<int, double> wall_vel;   
-    std::map<int, double> wall_temp; 
+    std::map<int, double> wall_vel;
+    std::map<int, double> wall_temp;
 
     for(size_t i = 0; i < input.wall_idx.size(); i++){
         if(input.wall_idx[i] != -1){
@@ -216,14 +216,14 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
         }
     }
 
- 
+
 
     // Build up the domain for each process
     Domain subdomain;
     build_domain(subdomain, input.xlength, input.ylength, input.imax, input.jmax, input.iproc, input.jproc);
 
     _grid = Grid(_geom_name, subdomain, _my_rank);
-    _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y, 
+    _field = Fields(input.nu, input.dt, input.tau, _grid.domain().size_x, _grid.domain().size_y,
                     input.UI, input.VI, input.PI, input.TI, input.alpha, input.beta, input.GX, input.GY);
 
     _discretization = Discretization(_grid.domain().dx, _grid.domain().dy, input.gamma);
@@ -270,7 +270,7 @@ Case::Case(std::string file_name, int &my_rank, int &comm_size)
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells(), wall_temp));
         } else {
             _boundaries.push_back(std::make_unique<FreeSlipBoundary>(_grid.free_slip_cells()));
-        } 
+        }
     }
 }
 
@@ -356,10 +356,12 @@ void Case::simulate() {
     while (t < _t_end) {
 
         // Applying velocity boundary condition for every 4 sides of the wall boundary, inflow, and outflow
+        // std::cout << "Setting boundaries..." << _my_rank << std::endl;
         for (auto &boundary : _boundaries) {
             boundary->apply(_field);
         }
 
+        // std::cout << "Setting temperature boundaries..."  << _my_rank << std::endl;
         // Calculate Temperature if the energy equation is on
         if(_energy_eq){
             for (auto &boundary : _boundaries) {
@@ -368,16 +370,19 @@ void Case::simulate() {
 
             _field.calculate_temperature(_grid);
 
-            Communication::barrier();       
-                                                                           // Staggered shift     
+            Communication::barrier();
+                                                                           // Staggered shift
             Communication::communicate(_field.T_matrix(), _grid.domain(), _my_rank, 0);
         }
 
+        // std::cout << "Calculating fluxes" << _my_rank << std::endl;
         // Calculate Fn and Gn
         _field.calculate_fluxes(_grid, _energy_eq);
-        
+
         Communication::barrier();
-                                                                            // Staggered shift     
+
+        // std::cout << "Communicating fluxes..." << _my_rank << std::endl;
+                                                                            // Staggered shift
         Communication::communicate(_field.f_matrix(), _grid.domain(), _my_rank, 1);
         Communication::communicate(_field.g_matrix(), _grid.domain(), _my_rank, 1);
 
@@ -388,15 +393,16 @@ void Case::simulate() {
         // Initialization of residual and iteration counter
         int it = 0;
         // Set initial tolerance
-        double res_proc =  std::numeric_limits<double>::max();  
-        double res =  std::numeric_limits<double>::max();  
+        double res_proc =  std::numeric_limits<double>::max();
+        double res =  std::numeric_limits<double>::max();
 
         while (res > _tolerance){
-            
+
             // Perform SOR Solver and retrieve residual for the loop continuity
             res_proc = _pressure_solver->solve(_field, _grid, _boundaries);
-                  
-                                                                            // Staggered shift     
+
+            Communication::barrier();
+                                                                            // Staggered shift
             Communication::communicate(_field.p_matrix(), _grid.domain(), _my_rank, 0);
 
             Communication::barrier();
@@ -409,7 +415,7 @@ void Case::simulate() {
 
             // Check if SOR didn't converge
             if(it > _max_iter) {
-               std::cout << "WARNING! SOR reached maximum number of iterations at t = " 
+               std::cout << "WARNING! SOR reached maximum number of iterations at t = "
                << t << ". Residual = " << res << std::endl;
                break;
             }
@@ -420,8 +426,8 @@ void Case::simulate() {
         _field.calculate_velocities(_grid);
 
         Communication::barrier();
-                                                                            // Staggered shift     
-        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);   
+                                                                            // Staggered shift
+        Communication::communicate(_field.u_matrix(), _grid.domain(), _my_rank, 1);
         Communication::communicate(_field.v_matrix(), _grid.domain(), _my_rank, 1);
 
         // Calculate new time
@@ -444,7 +450,7 @@ void Case::simulate() {
             }
             output_vtk(step);
         }
-     
+
     }
 
     // Output the final VTK file
@@ -566,7 +572,7 @@ void Case::build_domain(Domain &domain, double xlength, double ylength, int imax
     int max_partition_size_y = (jmax_domain % jproc) ? std::floor(jmax_domain / jproc) + 1 : (jmax_domain / jproc);
 
     domain.max_size_x = max_partition_size_x;
-    domain.max_size_y = max_partition_size_y;   
+    domain.max_size_y = max_partition_size_y;
 
     int residual_partition_size_x = imax_domain - max_partition_size_x * (iproc - 1);
     int residual_partition_size_y = jmax_domain - max_partition_size_y * (jproc - 1);

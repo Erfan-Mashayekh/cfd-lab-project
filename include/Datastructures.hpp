@@ -2,7 +2,7 @@
 #define DATASTRUCTURES_HPP
 
 #include <vector>
-
+#include <stdexcept>
 
 /**
  * @brief General 2D data structure around std::vector, in column
@@ -43,7 +43,17 @@ template <typename T> class Matrix {
      * @param[in] y index
      * @param[out] reference to the value
      */
-    T &operator()(int i, int j) { return _container.at(_imax * j + i); }
+    T &operator()(int i, int j) {
+        try{
+            return _container.at(_imax * j + i);
+        } catch (...) {
+            if(_imax * j + i < 0){
+                throw std::out_of_range("Lower bound violated " + std::to_string(i) + " " + std::to_string(j));
+            } else {
+                throw std::out_of_range("Upper bound violated " + std::to_string(i) + " " + std::to_string(j));
+            }
+        }
+    }
 
     /**
      * @brief Element access using index
@@ -52,7 +62,17 @@ template <typename T> class Matrix {
      * @param[in] y index
      * @param[out] value of the element
      */
-    T operator()(int i, int j) const { return _container.at(_imax * j + i); }
+    T operator()(int i, int j) const {
+        try{
+            return _container.at(_imax * j + i);
+        } catch (...) {
+            if(_imax * j + i < 0){
+                throw std::out_of_range("Lower bound violated");
+            } else {
+                throw std::out_of_range("Upper bound violated");
+            }
+        }
+    }
 
     /**
      * @brief Pointer representation of underlying data
@@ -60,14 +80,14 @@ template <typename T> class Matrix {
      * @param[out] pointer to the beginning of the vector
      */
     const T *data() const { return _container.data(); }
-    
+
     /**
      * @brief Pointer representation of underlying data
      *
      * @param[out] pointer to the beginning of the vector
-     */   
+     */
     std::vector<T> *container() { return &_container; }
-    
+
     /**
      * @brief Access of the size of the structure
      *
@@ -108,10 +128,10 @@ template <typename T> class Matrix {
     }
 
     /// get the number of elements in x direction
-    int imax() const { return _imax; }
+    size_t imax() const { return _imax; }
 
     /// get the number of elements in y direction
-    int jmax() const { return _jmax; }
+    size_t jmax() const { return _jmax; }
 
   private:
     /// Number of elements in x direction

@@ -24,7 +24,7 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells) : _cells(cells) 
 FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature)
                 : _cells(cells), _wall_temperature(wall_temperature) {}
 
-MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity) 
+MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity)
                 : _cells(cells), _wall_velocity(wall_velocity) {}
 
 MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity, std::map<int, double> wall_temperature)
@@ -71,7 +71,7 @@ void InflowBoundary::apply(Fields &field){
 void OutflowBoundary::apply(Fields &field){
 
     for (auto const& cell : _cells) {
-        
+
         std::vector<border_position> border_pos = cell->borders();
         double sum_pressure = 0;
         int shift_left = 0;
@@ -80,10 +80,10 @@ void OutflowBoundary::apply(Fields &field){
             shift_left = (b_pos == border_position::LEFT) ? 1 : shift_left;
             shift_down = (b_pos == border_position::BOTTOM) ? 1 : shift_down;
             // Set u and v (Neumann)
-            field.u(cell->i() - shift_left, cell->j()) = (b_pos == border_position::LEFT || b_pos == border_position::RIGHT) ? 
+            field.u(cell->i() - shift_left, cell->j()) = (b_pos == border_position::LEFT || b_pos == border_position::RIGHT) ?
                                                          field.u(cell->neighbour(b_pos)->i() - shift_left, cell->neighbour(b_pos)->j()) :
-                                                         field.u(cell->i() - shift_left, cell->j());    
-            field.v(cell->i(), cell->j() - shift_down) = (b_pos == border_position::TOP || b_pos == border_position::BOTTOM) ? 
+                                                         field.u(cell->i() - shift_left, cell->j());
+            field.v(cell->i(), cell->j() - shift_down) = (b_pos == border_position::TOP || b_pos == border_position::BOTTOM) ?
                                                          field.v(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j() - shift_down) :
                                                          field.v(cell->i(), cell->j() - shift_down);
             sum_pressure += field.p(cell->neighbour(b_pos)->i(), cell->neighbour(b_pos)->j());
@@ -99,7 +99,7 @@ void OutflowBoundary::apply(Fields &field){
 void FixedWallBoundary::apply(Fields &field){
 
     for(auto const& cell: _cells){
-        
+
         std::vector<border_position> border_pos = cell->borders();
 
         // Set boundary conditions to zero if there are no bordering fluid cells (at inner obstacle cells)
@@ -108,42 +108,82 @@ void FixedWallBoundary::apply(Fields &field){
             field.v(cell->i(), cell->j()) = 0.0;
             field.f(cell->i(), cell->j()) = 0.0;
             field.g(cell->i(), cell->j()) = 0.0;
-            continue; 
+            continue;
         }
         // Set boudndary conditions when there is only one boundary cell
         else {
             // Set u, v, f, g
-            if(cell->is_border(border_position::RIGHT)){          
-                field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() + 1, cell->j() - 1);
-                field.v(cell->i(), cell->j()) = - field.v(cell->i() + 1, cell->j());
+            if(cell->is_border(border_position::RIGHT)){
+                try {
+                    field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() + 1, cell->j() - 1);
+                    field.v(cell->i(), cell->j()) = - field.v(cell->i() + 1, cell->j());
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
             }
-            if(cell->is_border(border_position::LEFT)){   
-                field.v(cell->i(), cell->j()) = - field.v(cell->i() - 1, cell->j());
-                field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() - 1, cell->j() - 1);
-            }
-            if(cell->is_border(border_position::TOP)){
-                field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() + 1);
-                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() + 1);
-            }
-            if(cell->is_border(border_position::BOTTOM)){   
-                field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() - 1);
-                field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() - 1);
-            }
-            if(cell->is_border(border_position::RIGHT)){          
-                field.u(cell->i(), cell->j()) = 0.0;
-                field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
-            }
-            if(cell->is_border(border_position::LEFT)){   
-                field.u(cell->i()-1, cell->j()) = 0.0;
-                field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
+            if(cell->is_border(border_position::LEFT)){
+                try {
+                    field.v(cell->i(), cell->j()) = - field.v(cell->i() - 1, cell->j());
+                    field.v(cell->i(), cell->j() - 1) = - field.v(cell->i() - 1, cell->j() - 1);
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
             }
             if(cell->is_border(border_position::TOP)){
-                field.v(cell->i(), cell->j()) = 0.0;
-                field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+                try {
+                    field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() + 1);
+                    field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() + 1);
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
             }
-            if(cell->is_border(border_position::BOTTOM)){   
-                field.v(cell->i(), cell->j()-1) = 0.0;    
-                field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
+            if(cell->is_border(border_position::BOTTOM)){
+                try {
+                    field.u(cell->i(), cell->j()) = - field.u(cell->i(), cell->j() - 1);
+                    field.u(cell->i() - 1, cell->j()) = - field.u(cell->i() - 1, cell->j() - 1);
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
+            }
+            if(cell->is_border(border_position::RIGHT)){
+                try {
+                    field.u(cell->i(), cell->j()) = 0.0;
+                    field.f(cell->i(), cell->j()) = field.u(cell->i(), cell->j());
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
+            }
+            if(cell->is_border(border_position::LEFT)){
+                try {
+                    field.u(cell->i()-1, cell->j()) = 0.0;
+                    field.f(cell->i()-1, cell->j()) = field.u(cell->i()-1, cell->j());
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
+            }
+            if(cell->is_border(border_position::TOP)){
+                try {
+                    field.v(cell->i(), cell->j()) = 0.0;
+                    field.g(cell->i(), cell->j()) = field.v(cell->i(), cell->j());
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
+            }
+            if(cell->is_border(border_position::BOTTOM)){
+                try {
+                    field.v(cell->i(), cell->j()-1) = 0.0;
+                    field.g(cell->i(), cell->j()-1) = field.v(cell->i(), cell->j()-1);
+                } catch(std::out_of_range &e) {
+                    std::cout << e.what() << " at Line " << __LINE__ << " of " << __FILE__ << std::endl;
+                    throw e;
+                }
             }
             // Set pressure
             if(border_pos.size() == 1){
@@ -152,7 +192,7 @@ void FixedWallBoundary::apply(Fields &field){
                 field.p(cell->i(), cell->j()) = 0.5 * (field.p(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                     +  field.p(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
             } else {
-                assert(false);
+                assert((false && "ERROR: Forbidden cell detected in FixedWallBoundary!"));
             }
         }
     }
@@ -173,7 +213,7 @@ void MovingWallBoundary::apply(Fields &field) {
         }
 
         if(border_pos.size() > 1){
-            assert(false); // Should not reach here
+            assert((false && "MovingWallBoundary cells with more than 1 fluid boundaries are not supported!")); // Should not reach here
         }
 
         field.v(cell->i(), cell->j()) = 0;
@@ -226,18 +266,18 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
                 field.T(cell->i(), cell->j()) = 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                      + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
             } else if (border_pos.size() > 2){
-                assert(false);
+                assert((false && "ERROR: Forbidden cell detected!"));
             }
         } else {
             // Dirichlet Boundary Condition
             if (border_pos.size() == 1) {
                 field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] - field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j());
             } else if (border_pos.size() == 2) {
-                field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()] 
-                                                - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j()) 
+                field.T(cell->i(), cell->j()) = 2 * _wall_temperature[cell->wall_id()]
+                                                - 0.5 * (field.T(cell->neighbour(border_pos.at(0))->i(), cell->neighbour(border_pos.at(0))->j())
                                                        + field.T(cell->neighbour(border_pos.at(1))->i(), cell->neighbour(border_pos.at(1))->j()));
             } else if (border_pos.size() > 2){
-                assert(false);
+                assert((false && "ERROR: Forbidden cell detected!"));
             }
         }
     }
@@ -246,4 +286,3 @@ void FixedWallBoundary::apply_temperature(Fields &field) {
 void MovingWallBoundary::apply_temperature(Fields &field) {(void)field;}
 
 void FreeSlipBoundary::apply_temperature(Fields &field) {(void)field;}
-
