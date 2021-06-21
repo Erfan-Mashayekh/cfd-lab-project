@@ -67,9 +67,9 @@ template <typename T> class Matrix {
             return _container.at(_imax * j + i);
         } catch (...) {
             if(_imax * j + i < 0){
-                throw std::out_of_range("Lower bound violated");
+                throw std::out_of_range("Lower bound violated " + std::to_string(i) + " " + std::to_string(j));
             } else {
-                throw std::out_of_range("Upper bound violated");
+                throw std::out_of_range("Upper bound violated " + std::to_string(i) + " " + std::to_string(j));
             }
         }
     }
