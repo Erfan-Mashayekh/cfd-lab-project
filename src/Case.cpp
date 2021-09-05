@@ -591,7 +591,7 @@ void Case::build_domain(Domain &domain, double xlength, double ylength, int imax
 
     domain.imin = 0;
     domain.jmin = 0;
-    domain.imax = domain.size_x + 2;
-    domain.jmax = domain.size_y + 2;
+    domain.imax = domain.size_x - 1 + 2;
+    domain.jmax = domain.size_y - 1 + 2;
 
 }

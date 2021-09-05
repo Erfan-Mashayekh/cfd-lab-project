@@ -46,11 +46,11 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
 
  // ------------------------Send Right---------------------------------
-    std::vector<double> recv_l_buf(domain.jmax, 0.0);
-    std::vector<double> send_r_buf = field.get_col(domain.imax - 2);
+    std::vector<double> recv_l_buf(domain.jmax + 1, 0.0);
+    std::vector<double> send_r_buf = field.get_col(domain.imax - 1);
 
-    MPI_Sendrecv ( send_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
-                   recv_l_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
+    MPI_Sendrecv ( send_r_buf.data(), domain.jmax + 1, MPI_DOUBLE, right, 0,
+                   recv_l_buf.data(), domain.jmax + 1, MPI_DOUBLE,  left, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     if( left != MPI_PROC_NULL ){
@@ -62,16 +62,15 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
 
  // ----------------------- Send Left ------------------------------
-    std::vector<double> recv_r_buf(domain.jmax, 0.0);
+    std::vector<double> recv_r_buf(domain.jmax + 1, 0.0);
     std::vector<double> send_l_buf = field.get_col(domain.imin + 1);
 
-
-    MPI_Sendrecv ( send_l_buf.data(), domain.jmax, MPI_DOUBLE,  left, 0,
-                   recv_r_buf.data(), domain.jmax, MPI_DOUBLE, right, 0,
+    MPI_Sendrecv ( send_l_buf.data(), domain.jmax + 1, MPI_DOUBLE,  left, 0,
+                   recv_r_buf.data(), domain.jmax + 1, MPI_DOUBLE, right, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     if( right != MPI_PROC_NULL ){
-        field.set_col(recv_r_buf, domain.imax - 1 - shift);
+        field.set_col(recv_r_buf, domain.imax - shift);
     }
 
     // MPI_Barrier(MPI_COMM_WORLD);
@@ -85,15 +84,15 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
 
   // ----------------------- Send down ------------------------------
-    std::vector<double> recv_u_buf(domain.imax, 0.0);
+    std::vector<double> recv_u_buf(domain.imax + 1, 0.0);
     std::vector<double> send_d_buf = field.get_row(domain.jmin + 1);
 
-    MPI_Sendrecv ( send_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
-                   recv_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
+    MPI_Sendrecv ( send_d_buf.data(), domain.imax + 1, MPI_DOUBLE, down, 0,
+                   recv_u_buf.data(), domain.imax + 1, MPI_DOUBLE,   up, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     if( up != MPI_PROC_NULL ){
-        field.set_row(recv_u_buf, domain.jmax - 1 - shift);
+        field.set_row(recv_u_buf, domain.jmax - shift);
     }
 
     // MPI_Barrier(MPI_COMM_WORLD);
@@ -101,14 +100,14 @@ void Communication::communicate(Matrix<double> &field, const Domain &domain, con
 
 
   // ----------------------- Send up ------------------------------
-    std::vector<double> recv_d_buf(domain.imax, 0.0);
-    std::vector<double> send_u_buf = field.get_row(domain.jmax - 2);
+    std::vector<double> recv_d_buf(domain.imax + 1, 0.0);
+    std::vector<double> send_u_buf = field.get_row(domain.jmax - 1);
 
-    MPI_Sendrecv ( send_u_buf.data(), domain.imax, MPI_DOUBLE,   up, 0,
-                   recv_d_buf.data(), domain.imax, MPI_DOUBLE, down, 0,
+    MPI_Sendrecv ( send_u_buf.data(), domain.imax + 1, MPI_DOUBLE,   up, 0,
+                   recv_d_buf.data(), domain.imax + 1, MPI_DOUBLE, down, 0,
                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    if( up != MPI_PROC_NULL ){
+    if( down != MPI_PROC_NULL ){
         field.set_row(recv_d_buf, domain.jmin);
     }
 

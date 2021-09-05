@@ -49,11 +49,11 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
     int i_geom;
     int j_geom;
 
-    for (int j_domain = _domain.jmin; j_domain < _domain.jmax; ++j_domain) {
+    for (int j_domain = _domain.jmin; j_domain <= _domain.jmax; ++j_domain) {
 
         i = 0;
 
-        for (int i_domain = _domain.imin; i_domain < _domain.imax; ++i_domain) {
+        for (int i_domain = _domain.imin; i_domain <= _domain.imax; ++i_domain) {
             // Shift each subdomain to its correct place in a parallel computation
             i_geom = i_domain + _domain.max_size_x * (my_rank % _domain.iproc);
             j_geom = j_domain + _domain.max_size_y * std::floor(my_rank / _domain.iproc);
@@ -277,25 +277,6 @@ void Grid::assign_cell_types(Matrix<int> &geometry_data, const int& my_rank) {
         }
     }
 
-
-    if(my_rank == 0){
-        std::cout << "Cell types in " << my_rank << std::endl;
-        for(int col = _cells.jmax() - 1; col > -1; col--){
-            for(size_t row = 0; row < _cells.imax(); row++){
-                std::cout << (int)(_cells(row, col).type()) << " ";
-                // std::cout << _cells(row, col).borders().size() << " ";
-            }
-            std::cout << std::endl;
-        }
-        std::cout << "----------------------------------------------------------------------------------- " << std::endl;
-        for(int col = _cells.jmax() - 1; col > -1; col--){
-            for(size_t row = 0; row < _cells.imax(); row++){
-                // std::cout << (int)(_cells(row, col).type()) << " ";
-                std::cout << _cells(row, col).borders().size() << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
 
     /*******************************************
      * Terminate if Forbidden cells are present
